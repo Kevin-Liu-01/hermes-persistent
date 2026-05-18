@@ -39,17 +39,18 @@ export function isDevBypassEnabled(): boolean {
  *   signed in.
  * - Returns `null` otherwise; callers should respond with 401.
  *
- * `auth()` may throw at module-eval time when Clerk middleware
- * never ran (e.g. Clerk env unset entirely). Catch that and fall
- * back to the dev path so a fresh checkout with no Clerk keys still
- * works for local iteration.
+ * Never throws -- callers rely on `null` to mean "unauthenticated"
+ * and return 401 themselves. Throwing here would crash the entire
+ * route handler, producing a Vercel 502 instead of a clean 401.
  */
 export async function getEffectiveUserId(): Promise<string | null> {
 	try {
 		const { userId } = await auth();
 		if (userId) return userId;
-	} catch (err) {
-		if (!isDevBypassEnabled()) throw err;
+	} catch {
+		// auth() can throw when Clerk middleware never ran (env unset)
+		// or on transient Clerk SDK errors. Return null so the route
+		// handler responds 401 instead of crashing with a 502.
 	}
 	return isDevBypassEnabled() ? DEV_USER_ID : null;
 }

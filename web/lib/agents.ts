@@ -33,6 +33,14 @@ export const AGENTS: ReadonlyArray<AgentMeta> = [
 		githubUrl: "https://github.com/NousResearch/hermes-agent",
 		logoMark: "nous",
 		serviceSlug: null,
+		nativeToolNames: [
+			"terminal", "read_file", "write_file", "patch", "search",
+			"browser_navigate", "browser_click", "browser_type", "browser_snapshot", "browser_screenshot",
+			"computer_use", "vision_analyze", "image_generate", "tts",
+			"execute_code", "delegate_task", "cronjob",
+			"skills_list", "skill_view", "memory", "session_search",
+			"web_search", "web_extract",
+		],
 	},
 	{
 		id: "openclaw",
@@ -57,6 +65,14 @@ export const AGENTS: ReadonlyArray<AgentMeta> = [
 		githubUrl: "https://github.com/openclaw/openclaw",
 		logoMark: "openclaw",
 		serviceSlug: null,
+		nativeToolNames: [
+			"terminal", "read_file", "write_file", "search",
+			"browser_navigate", "browser_click", "browser_type", "browser_snapshot", "browser_screenshot",
+			"computer_use", "vision_analyze",
+			"web_search", "web_extract",
+			"delegate_task", "cronjob",
+			"skills_list", "skill_view", "memory",
+		],
 	},
 	{
 		id: "claude-code",
@@ -77,6 +93,12 @@ export const AGENTS: ReadonlyArray<AgentMeta> = [
 		githubUrl: "https://github.com/anthropics/claude-code",
 		logoMark: "anthropic",
 		serviceSlug: "anthropic",
+		nativeToolNames: [
+			"terminal", "read_file", "write_file", "patch", "search",
+			"delegate_task", "cronjob",
+			"skills_list", "skill_view",
+			"web_search", "web_extract",
+		],
 	},
 	{
 		id: "codex",
@@ -97,6 +119,11 @@ export const AGENTS: ReadonlyArray<AgentMeta> = [
 		githubUrl: "https://github.com/openai/codex",
 		logoMark: "openai",
 		serviceSlug: "openai",
+		nativeToolNames: [
+			"terminal", "read_file", "write_file", "patch", "search",
+			"execute_code", "delegate_task",
+			"web_search", "image_generate",
+		],
 	},
 ];
 

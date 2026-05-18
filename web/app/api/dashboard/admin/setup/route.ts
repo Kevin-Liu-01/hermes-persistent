@@ -123,18 +123,26 @@ export async function GET(): Promise<Response> {
 	if (!userId) {
 		return Response.json({ error: "unauthorized" }, { status: 401 });
 	}
-	const config = await getUserConfig();
-	const defaults = getOwnerDefaults();
-	return Response.json({
-		config: toPublicConfig(config),
-		defaults: {
-			machineSpec: defaults.draftSpec,
-			model: defaults.draftModel,
-			hasOwnerDedalusKey: Boolean(defaults.providers.dedalus?.apiKey),
-			hasOwnerCursorKey: Boolean(defaults.cursorApiKey),
-			hasOwnerMachine: defaults.machines.length > 0,
-		},
-	});
+	try {
+		const config = await getUserConfig();
+		const defaults = getOwnerDefaults();
+		return Response.json({
+			config: toPublicConfig(config),
+			defaults: {
+				machineSpec: defaults.draftSpec,
+				model: defaults.draftModel,
+				hasOwnerDedalusKey: Boolean(defaults.providers.dedalus?.apiKey),
+				hasOwnerCursorKey: Boolean(defaults.cursorApiKey),
+				hasOwnerMachine: defaults.machines.length > 0,
+			},
+		});
+	} catch (err) {
+		const message = err instanceof Error ? err.message : "setup read failed";
+		return Response.json(
+			{ error: "read_failed", message },
+			{ status: 500 },
+		);
+	}
 }
 
 export async function POST(request: Request): Promise<Response> {
@@ -220,6 +228,14 @@ export async function POST(request: Request): Promise<Response> {
 		patch.setupStep = body.setupStep;
 	}
 
-	const next = await setUserConfig(patch);
-	return Response.json({ config: toPublicConfig(next) });
+	try {
+		const next = await setUserConfig(patch);
+		return Response.json({ config: toPublicConfig(next) });
+	} catch (err) {
+		const message = err instanceof Error ? err.message : "setup save failed";
+		return Response.json(
+			{ error: "save_failed", message },
+			{ status: 500 },
+		);
+	}
 }

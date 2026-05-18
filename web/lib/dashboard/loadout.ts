@@ -4,8 +4,7 @@
  * Mirrors the wiki's `config/cursor/rules/tool-hierarchy.mdc` -- the
  * always-applied tool registry that ranks interfaces per service and
  * tools per task. Surfaced on `/dashboard/loadout` so the user can see
- * exactly what's available to their agent at a glance, with each entry
- * tagged for which agent (Hermes / OpenClaw / both) can call it.
+ * exactly what's available to their agent at a glance.
  *
  * Three layers, ordered from most to least concrete:
  *
@@ -28,10 +27,10 @@
 
 import type { Mark } from "@/components/Logo";
 import type { ServiceSlug } from "@/components/ServiceIcon";
+import { AGENTS } from "@/lib/agents";
 import type { McpServerWithBrand } from "@/lib/dashboard/mcps";
 import type { SkillSummary } from "@/lib/dashboard/types";
-
-export type AgentSupport = "hermes" | "openclaw" | "both";
+import type { AgentKind } from "@/lib/types";
 
 export type ToolCategory =
 	| "shell"
@@ -64,7 +63,6 @@ export type TrustedAddOn = {
 	source: string;
 	command: string | null;
 	brand?: ServiceSlug;
-	agent: AgentSupport;
 };
 
 export type BuiltinTool = {
@@ -72,16 +70,13 @@ export type BuiltinTool = {
 	title: string;
 	description: string;
 	category: ToolCategory;
-	agent: AgentSupport;
 	provider: Mark | "rig";
 };
 
 /**
  * Native tools the running agent can invoke without going through an
- * MCP server. Hermes ships its catalog as part of the
- * `hermes-agent` install; OpenClaw ships its catalog as part of
- * `openclaw@latest`. Tools tagged `agent: "both"` are available
- * regardless of which agent is currently active on the user's machine.
+ * MCP server. The rig provides every tool to every agent -- no
+ * per-agent restrictions.
  */
 export const BUILTIN_TOOLS: ReadonlyArray<BuiltinTool> = [
 	{
@@ -90,7 +85,6 @@ export const BUILTIN_TOOLS: ReadonlyArray<BuiltinTool> = [
 		description:
 			"Run any shell command in the VM. Streams stdout/stderr back to the chat. Used for git, tests, build pipelines, package installs, system inspection.",
 		category: "shell",
-		agent: "both",
 		provider: "rig",
 	},
 	{
@@ -99,7 +93,6 @@ export const BUILTIN_TOOLS: ReadonlyArray<BuiltinTool> = [
 		description:
 			"Read a file from the VM filesystem with optional offset/limit. Bounded output to keep the agent's context window healthy.",
 		category: "filesystem",
-		agent: "both",
 		provider: "rig",
 	},
 	{
@@ -108,7 +101,6 @@ export const BUILTIN_TOOLS: ReadonlyArray<BuiltinTool> = [
 		description:
 			"Write or overwrite a file on the VM. Strict path checks keep writes inside ~/work and ~/.agent-machines by default.",
 		category: "filesystem",
-		agent: "both",
 		provider: "rig",
 	},
 	{
@@ -117,8 +109,7 @@ export const BUILTIN_TOOLS: ReadonlyArray<BuiltinTool> = [
 		description:
 			"Apply a unified diff to an existing file. Cheaper than full rewrites for surgical edits.",
 		category: "filesystem",
-		agent: "hermes",
-		provider: "nous",
+		provider: "rig",
 	},
 	{
 		name: "search",
@@ -126,7 +117,6 @@ export const BUILTIN_TOOLS: ReadonlyArray<BuiltinTool> = [
 		description:
 			"ripgrep over the working directory. Supports regex, glob filters, multiline matches.",
 		category: "filesystem",
-		agent: "both",
 		provider: "rig",
 	},
 	{
@@ -135,7 +125,6 @@ export const BUILTIN_TOOLS: ReadonlyArray<BuiltinTool> = [
 		description:
 			"Drive a Playwright browser inside the VM. Navigate to a URL, wait for load, return the rendered DOM.",
 		category: "browser",
-		agent: "both",
 		provider: "rig",
 	},
 	{
@@ -144,7 +133,6 @@ export const BUILTIN_TOOLS: ReadonlyArray<BuiltinTool> = [
 		description:
 			"Click an element by accessible selector. Pairs with browser_snapshot to find the right ref.",
 		category: "browser",
-		agent: "both",
 		provider: "rig",
 	},
 	{
@@ -153,7 +141,6 @@ export const BUILTIN_TOOLS: ReadonlyArray<BuiltinTool> = [
 		description:
 			"Type into a focused input. Handles complex IME and shift-modifier sequences.",
 		category: "browser",
-		agent: "both",
 		provider: "rig",
 	},
 	{
@@ -162,7 +149,6 @@ export const BUILTIN_TOOLS: ReadonlyArray<BuiltinTool> = [
 		description:
 			"Returns a YAML-shaped accessibility snapshot of the current page. Refs from this snapshot drive subsequent click/type calls.",
 		category: "browser",
-		agent: "both",
 		provider: "rig",
 	},
 	{
@@ -171,7 +157,6 @@ export const BUILTIN_TOOLS: ReadonlyArray<BuiltinTool> = [
 		description:
 			"PNG screenshot of the viewport or a specific element. Stored as an artifact under ~/.agent-machines/artifacts/.",
 		category: "browser",
-		agent: "both",
 		provider: "rig",
 	},
 	{
@@ -180,8 +165,7 @@ export const BUILTIN_TOOLS: ReadonlyArray<BuiltinTool> = [
 		description:
 			"Mouse + keyboard automation against a virtual display. The Anthropic computer-use loop, drives a real X server inside the VM.",
 		category: "browser",
-		agent: "openclaw",
-		provider: "openclaw",
+		provider: "rig",
 	},
 	{
 		name: "vision_analyze",
@@ -189,7 +173,6 @@ export const BUILTIN_TOOLS: ReadonlyArray<BuiltinTool> = [
 		description:
 			"Send a screenshot or image file to the LLM with a vision-capable model. Returns a structured description.",
 		category: "vision",
-		agent: "both",
 		provider: "rig",
 	},
 	{
@@ -198,8 +181,7 @@ export const BUILTIN_TOOLS: ReadonlyArray<BuiltinTool> = [
 		description:
 			"Generate images with FLUX via FAL. Optional. Requires FAL_KEY in ~/.agent-machines/.env when used.",
 		category: "image",
-		agent: "hermes",
-		provider: "nous",
+		provider: "rig",
 	},
 	{
 		name: "tts",
@@ -207,8 +189,7 @@ export const BUILTIN_TOOLS: ReadonlyArray<BuiltinTool> = [
 		description:
 			"Synthesize speech from text. Edge TTS by default; ElevenLabs if ELEVENLABS_API_KEY is set.",
 		category: "audio",
-		agent: "hermes",
-		provider: "nous",
+		provider: "rig",
 	},
 	{
 		name: "execute_code",
@@ -216,8 +197,7 @@ export const BUILTIN_TOOLS: ReadonlyArray<BuiltinTool> = [
 		description:
 			"Sandboxed Python that can call other tools via internal RPC. Best for analysis, math, data wrangling, multi-step scripts.",
 		category: "code",
-		agent: "hermes",
-		provider: "nous",
+		provider: "rig",
 	},
 	{
 		name: "delegate_task",
@@ -225,8 +205,7 @@ export const BUILTIN_TOOLS: ReadonlyArray<BuiltinTool> = [
 		description:
 			"Spawn a subagent for parallel work. Subagent inherits parent's tools + skills; returns a final message back to the parent.",
 		category: "delegate",
-		agent: "hermes",
-		provider: "nous",
+		provider: "rig",
 	},
 	{
 		name: "cronjob",
@@ -234,8 +213,7 @@ export const BUILTIN_TOOLS: ReadonlyArray<BuiltinTool> = [
 		description:
 			"Create / list / edit / remove scheduled tasks. Persisted across machine sleep/wake; the cron runner wakes the machine when due.",
 		category: "schedule",
-		agent: "hermes",
-		provider: "nous",
+		provider: "rig",
 	},
 	{
 		name: "skills_list",
@@ -243,8 +221,7 @@ export const BUILTIN_TOOLS: ReadonlyArray<BuiltinTool> = [
 		description:
 			"Enumerate the SKILL.md files in ~/.agent-machines/skills. The agent inspects this when picking which skill conventions to load.",
 		category: "memory",
-		agent: "hermes",
-		provider: "nous",
+		provider: "rig",
 	},
 	{
 		name: "skill_view",
@@ -252,8 +229,7 @@ export const BUILTIN_TOOLS: ReadonlyArray<BuiltinTool> = [
 		description:
 			"Read a single SKILL.md body to load its conventions into the active turn.",
 		category: "memory",
-		agent: "hermes",
-		provider: "nous",
+		provider: "rig",
 	},
 	{
 		name: "memory",
@@ -261,8 +237,7 @@ export const BUILTIN_TOOLS: ReadonlyArray<BuiltinTool> = [
 		description:
 			"Read / update USER.md and MEMORY.md so future conversations have context without re-explaining.",
 		category: "memory",
-		agent: "hermes",
-		provider: "nous",
+		provider: "rig",
 	},
 	{
 		name: "session_search",
@@ -270,8 +245,7 @@ export const BUILTIN_TOOLS: ReadonlyArray<BuiltinTool> = [
 		description:
 			"Full-text search over every prior conversation stored in ~/.agent-machines/sessions/*.db. Surfaces past tool outputs as context.",
 		category: "search",
-		agent: "hermes",
-		provider: "nous",
+		provider: "rig",
 	},
 	{
 		name: "web_search",
@@ -279,7 +253,6 @@ export const BUILTIN_TOOLS: ReadonlyArray<BuiltinTool> = [
 		description:
 			"Live web search. Returns ranked results with snippets. Used as the first move for any 'what's the latest on X' question.",
 		category: "search",
-		agent: "both",
 		provider: "rig",
 	},
 	{
@@ -288,10 +261,41 @@ export const BUILTIN_TOOLS: ReadonlyArray<BuiltinTool> = [
 		description:
 			"Pull the readable content from a URL with images + metadata. Defuddle-style cleanup before the LLM sees the bytes.",
 		category: "search",
-		agent: "both",
 		provider: "rig",
 	},
 ];
+
+/* ------------------------------------------------------------------ */
+/* Per-tool agent support (informational only -- all tools always on)  */
+/* ------------------------------------------------------------------ */
+
+export type AgentToolBadge = {
+	agentId: AgentKind;
+	agentName: string;
+	native: boolean;
+	mark: Mark;
+};
+
+/**
+ * For a given built-in tool, returns which agents ship it natively and
+ * which get it from the rig. Every agent always has every tool -- this
+ * is purely informational for the loadout UI.
+ */
+export function getAgentSupportForTool(toolName: string): AgentToolBadge[] {
+	return AGENTS.map((agent) => ({
+		agentId: agent.id,
+		agentName: agent.name,
+		native: agent.nativeToolNames.includes(toolName),
+		mark: agent.logoMark as Mark,
+	}));
+}
+
+/**
+ * Pre-computed map of tool name -> agent badges. Avoids recomputing
+ * on every card render.
+ */
+export const TOOL_AGENT_SUPPORT: ReadonlyMap<string, ReadonlyArray<AgentToolBadge>> =
+	new Map(BUILTIN_TOOLS.map((t) => [t.name, getAgentSupportForTool(t.name)]));
 
 /* ------------------------------------------------------------------ */
 /* Service registry (mirrors tool-hierarchy.mdc)                       */
@@ -841,7 +845,6 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 		source: "plugin-vercel-vercel",
 		command: null,
 		brand: "vercel",
-		agent: "both",
 	},
 	{
 		id: "mcp-supabase",
@@ -853,7 +856,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 		source: "plugin-supabase-supabase",
 		command: null,
 		brand: "supabase",
-		agent: "both",
+
 	},
 	{
 		id: "mcp-stripe",
@@ -865,7 +868,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 		source: "plugin-stripe-stripe",
 		command: null,
 		brand: "stripe",
-		agent: "both",
+
 	},
 	{
 		id: "mcp-clerk",
@@ -877,7 +880,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 		source: "plugin-clerk-clerk",
 		command: null,
 		brand: "clerk",
-		agent: "both",
+
 	},
 	{
 		id: "mcp-posthog",
@@ -889,7 +892,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 		source: "plugin-posthog-posthog",
 		command: null,
 		brand: "posthog",
-		agent: "both",
+
 	},
 	{
 		id: "mcp-sentry",
@@ -901,7 +904,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 		source: "plugin-sentry-sentry",
 		command: null,
 		brand: "sentry",
-		agent: "both",
+
 	},
 	{
 		id: "mcp-datadog",
@@ -913,7 +916,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 		source: "plugin-datadog-datadog",
 		command: null,
 		brand: "datadog",
-		agent: "both",
+
 	},
 	{
 		id: "mcp-figma",
@@ -925,7 +928,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 		source: "plugin-figma-figma",
 		command: null,
 		brand: "figma",
-		agent: "both",
+
 	},
 	{
 		id: "mcp-linear",
@@ -937,7 +940,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 		source: "plugin-linear-linear",
 		command: null,
 		brand: "linear",
-		agent: "both",
+
 	},
 	{
 		id: "cli-gh",
@@ -949,7 +952,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 		source: "github/cli",
 		command: "gh",
 		brand: "github",
-		agent: "both",
+
 	},
 	{
 		id: "cli-vercel",
@@ -961,7 +964,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 		source: "vercel/vercel",
 		command: "vercel",
 		brand: "vercel",
-		agent: "both",
+
 	},
 	{
 		id: "cli-fly",
@@ -972,7 +975,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 			"Manage Fly apps, volumes, machines, secrets, deploys, and logs when Fly is selected as a provider.",
 		source: "superfly/flyctl",
 		command: "flyctl",
-		agent: "both",
+
 	},
 	{
 		id: "cli-cloudflared",
@@ -984,7 +987,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 		source: "cloudflare/cloudflared",
 		command: "cloudflared",
 		brand: "cloudflare",
-		agent: "both",
+
 	},
 	{
 		id: "cli-aws",
@@ -996,7 +999,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 		source: "aws/aws-cli",
 		command: "aws",
 		brand: "amazonwebservices",
-		agent: "both",
+
 	},
 	{
 		id: "tool-cursor-sdk",
@@ -1007,7 +1010,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 			"Programmatically run Cursor coding agents from scripts, services, CI, and machine-side automations.",
 		source: "@cursor/sdk",
 		command: "pnpm add @cursor/sdk",
-		agent: "hermes",
+
 	},
 	{
 		id: "tool-agent-browser",
@@ -1019,7 +1022,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 		source: "bootstrap + CLI",
 		command: "agent-browser",
 		brand: "googlechrome",
-		agent: "both",
+
 	},
 	{
 		id: "tool-playwright",
@@ -1031,7 +1034,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 		source: "microsoft/playwright",
 		command: "pnpm exec playwright",
 		brand: "playwright",
-		agent: "both",
+
 	},
 	{
 		id: "cli-api-probing",
@@ -1042,7 +1045,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 			"curl, httpx, and jq are installed for endpoint smoke tests, JSON inspection, and real response verification.",
 		source: "apt + uv tool",
 		command: "curl | jq; httpx",
-		agent: "both",
+
 	},
 	{
 		id: "cli-sqlite3",
@@ -1053,7 +1056,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 			"Inspect local databases, verify migrations, query schemas, and confirm persisted state without leaving the VM.",
 		source: "sqlite.org",
 		command: "sqlite3",
-		agent: "both",
+
 	},
 	{
 		id: "cli-network-debugging",
@@ -1064,7 +1067,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 			"ss, dig, curl -v, and nc are available for listener checks, DNS lookups, and connection debugging.",
 		source: "iproute2 + dnsutils + netcat",
 		command: "ss -tlnp; dig; curl -v; nc",
-		agent: "both",
+
 	},
 	{
 		id: "skill-deepsec",
@@ -1075,7 +1078,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 			"Agent-powered vulnerability scanner with regex calibration, parallel investigation, and revalidation.",
 		source: ".cursor/skills/deepsec/SKILL.md",
 		command: null,
-		agent: "both",
+
 	},
 	{
 		id: "skill-gstack-qa",
@@ -1086,7 +1089,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 			"Real-browser QA lead that tests flows, captures evidence, fixes obvious bugs, and writes regressions.",
 		source: ".cursor/skills/gstack-qa/SKILL.md",
 		command: null,
-		agent: "both",
+
 	},
 	{
 		id: "skill-frontend-design-taste",
@@ -1097,7 +1100,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 			"Anti-generic frontend taste skill with art direction, design dials, and production UI guardrails.",
 		source: ".cursor/skills/frontend-design-taste/SKILL.md",
 		command: null,
-		agent: "both",
+
 	},
 	{
 		id: "plugin-vercel",
@@ -1109,7 +1112,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 		source: "cursor-public/vercel skills",
 		command: null,
 		brand: "vercel",
-		agent: "both",
+
 	},
 	{
 		id: "source-github-skill-repo",
@@ -1121,7 +1124,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 		source: "github:<owner>/<repo>",
 		command: null,
 		brand: "github",
-		agent: "both",
+
 	},
 	{
 		id: "source-url-manifest",
@@ -1132,7 +1135,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 			"Load a remote JSON/YAML manifest that defines skills, MCP servers, CLIs, npm packages, or docs links.",
 		source: "https://example.com/agent-machines.json",
 		command: null,
-		agent: "both",
+
 	},
 	{
 		id: "source-official-mcp-registry",
@@ -1144,7 +1147,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 		source: "github:modelcontextprotocol/servers",
 		command: null,
 		brand: "github",
-		agent: "both",
+
 	},
 	{
 		id: "source-cursor-plugin-skills",
@@ -1155,7 +1158,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 			"Import plugin-published SKILL.md packs and MCP descriptors from installed Cursor plugins into a machine preset.",
 		source: "~/.cursor/plugins + ~/.cursor/skills",
 		command: null,
-		agent: "both",
+
 	},
 	{
 		id: "source-internal-agent-manifest",
@@ -1166,7 +1169,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 			"Point at a company-owned JSON/YAML manifest that declares approved skills, CLIs, MCP servers, package installs, and docs.",
 		source: "https://your-domain.example/agent-machines.json",
 		command: null,
-		agent: "both",
+
 	},
 	{
 		id: "source-openapi-docs",
@@ -1177,7 +1180,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 			"Attach OpenAPI specs or docs URLs so an agent preset can ground service-specific tools against reputable source material.",
 		source: "openapi:https://api.example.com/openapi.json",
 		command: null,
-		agent: "both",
+
 	},
 	{
 		id: "cli-pnpm",
@@ -1188,7 +1191,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 			"Workspace-aware package manager for installing and running project tools inside the VM without changing the app contract.",
 		source: "pnpm.io",
 		command: "corepack enable pnpm",
-		agent: "both",
+
 	},
 	{
 		id: "cli-uv",
@@ -1200,7 +1203,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 		source: "astral-sh/uv",
 		command: "uv tool install <package>",
 		brand: "github",
-		agent: "both",
+
 	},
 	{
 		id: "cli-docker",
@@ -1211,7 +1214,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 			"Optional container workflow surface for repos that already ship Dockerfiles or compose files and need parity checks.",
 		source: "docker/cli",
 		command: "docker",
-		agent: "both",
+
 	},
 	{
 		id: "mcp-playwright",
@@ -1223,7 +1226,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 		source: "@playwright/mcp",
 		command: "npx @playwright/mcp",
 		brand: "playwright",
-		agent: "both",
+
 	},
 	{
 		id: "tool-shadcn-registry",
@@ -1234,7 +1237,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 			"Composable UI source for importing audited component recipes and custom registry items into frontend presets.",
 		source: "ui.shadcn.com/registry",
 		command: "pnpm dlx shadcn@latest add <component>",
-		agent: "both",
+
 	},
 	{
 		id: "tool-tailwindcss",
@@ -1246,7 +1249,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 		source: "tailwindcss.com/docs",
 		command: "pnpm add tailwindcss @tailwindcss/postcss",
 		brand: "tailwindcss",
-		agent: "both",
+
 	},
 	{
 		id: "provider-vercel-sandbox",
@@ -1258,7 +1261,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 		source: "@vercel/sandbox",
 		command: null,
 		brand: "vercel",
-		agent: "both",
+
 	},
 	{
 		id: "provider-fly-machines",
@@ -1269,7 +1272,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 			"Persistent app-scoped machines with volumes, useful when users want an alternative long-lived runtime.",
 		source: "Fly Machines API",
 		command: "flyctl",
-		agent: "both",
+
 	},
 	{
 		id: "cli-agent-browser",
@@ -1281,7 +1284,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 		source: "vercel-labs/agent-browser",
 		command: "agent-browser",
 		brand: "googlechrome",
-		agent: "both",
+
 	},
 	{
 		id: "cli-agent-reach",
@@ -1292,7 +1295,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 			"17-platform CLI for reading and searching Twitter/X, Reddit, YouTube, GitHub, LinkedIn, RSS, and web pages with zero API fees.",
 		source: "Panniantong/Agent-Reach",
 		command: "agent-reach",
-		agent: "both",
+
 	},
 	{
 		id: "cli-skills-sh",
@@ -1303,7 +1306,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 			"Open registry for agent skills. Search, install, update, and audit skills from skills.sh with security vetting. 900K+ weekly installs.",
 		source: "vercel-labs/skills",
 		command: "npx skills find [query]",
-		agent: "both",
+
 	},
 	{
 		id: "source-skills-sh-registry",
@@ -1314,7 +1317,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 			"The definitive open skills registry. Browse the leaderboard at skills.sh for battle-tested skills across React, testing, design, deployment, and more.",
 		source: "https://skills.sh",
 		command: null,
-		agent: "both",
+
 	},
 	{
 		id: "cli-defuddle",
@@ -1325,7 +1328,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 			"Local webpage content extractor that parses URLs to clean markdown or JSON with metadata. No API dependency fallback for Jina Reader.",
 		source: "defuddle",
 		command: "npx defuddle parse URL --markdown",
-		agent: "both",
+
 	},
 	{
 		id: "cli-yt-dlp",
@@ -1336,7 +1339,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 			"Video metadata, transcripts, and subtitle extraction from YouTube and other video platforms for research workflows.",
 		source: "yt-dlp/yt-dlp",
 		command: "yt-dlp --dump-json URL",
-		agent: "both",
+
 	},
 	{
 		id: "tool-deepsec",
@@ -1347,7 +1350,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 			"Agent-powered vulnerability scanner that dispatches coding agents at max reasoning to investigate security-sensitive files. Regex pre-scan + revalidation.",
 		source: "vercel-labs/deepsec",
 		command: "npx deepsec scan --limit 50",
-		agent: "both",
+
 	},
 	{
 		id: "cli-jina-reader",
@@ -1358,7 +1361,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 			"Web page reader that converts any URL to clean text via r.jina.ai. Primary extraction method before falling back to defuddle.",
 		source: "jina-ai/reader",
 		command: "curl -s https://r.jina.ai/URL",
-		agent: "both",
+
 	},
 	{
 		id: "mcp-slack",
@@ -1370,7 +1373,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 		source: "plugin-slack-slack",
 		command: null,
 		brand: "slack",
-		agent: "both",
+
 	},
 	{
 		id: "mcp-sanity",
@@ -1381,7 +1384,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 			"Content modeling, GROQ queries, schema inspection, and Studio configuration for headless CMS workflows.",
 		source: "plugin-sanity-Sanity",
 		command: null,
-		agent: "both",
+
 	},
 	{
 		id: "mcp-firebase",
@@ -1393,7 +1396,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 		source: "plugin-firebase-firebase",
 		command: null,
 		brand: "firebase",
-		agent: "both",
+
 	},
 	{
 		id: "mcp-shopify",
@@ -1405,7 +1408,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 		source: "cursor-public/shopify skills",
 		command: null,
 		brand: "shopify",
-		agent: "both",
+
 	},
 	{
 		id: "cli-hermes",
@@ -1416,7 +1419,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 			"Self-improving agent runtime with memory, cron, sessions, MCP host, and OpenAI-compatible gateway. Installed via uv into the VM.",
 		source: "NousResearch/hermes-agent",
 		command: "hermes",
-		agent: "hermes",
+
 	},
 	{
 		id: "cli-openclaw",
@@ -1427,7 +1430,6 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 			"Anthropic computer-use agent with browser, screenshot, shell, and vision. Global npm install, same /v1 gateway surface.",
 		source: "openclaw/openclaw",
 		command: "openclaw",
-		agent: "openclaw",
 	},
 	{
 		id: "cli-stripe",
@@ -1439,7 +1441,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 		source: "stripe/stripe-cli",
 		command: "stripe",
 		brand: "stripe",
-		agent: "both",
+
 	},
 	{
 		id: "cli-supabase",
@@ -1451,7 +1453,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 		source: "supabase/cli",
 		command: "supabase",
 		brand: "supabase",
-		agent: "both",
+
 	},
 	{
 		id: "mcp-cursor-bridge",
@@ -1462,7 +1464,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 			"Bundled MCP server exposing cursor_agent, cursor_resume, cursor_list_skills, and cursor_models via @cursor/sdk.",
 		source: "mcp/cursor-bridge/src/server.ts",
 		command: null,
-		agent: "hermes",
+
 	},
 	{
 		id: "mcp-chrome-devtools",
@@ -1474,7 +1476,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 		source: "Chrome DevTools Protocol",
 		command: null,
 		brand: "googlechrome",
-		agent: "both",
+
 	},
 	{
 		id: "mcp-gitlens",
@@ -1486,7 +1488,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 		source: "GitLens extension",
 		command: null,
 		brand: "github",
-		agent: "both",
+
 	},
 	{
 		id: "cli-mcporter",
@@ -1497,7 +1499,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 			"Call MCP tools from the shell. Used in agent-reach workflows for Exa semantic search and other MCP tool invocations.",
 		source: "mcporter",
 		command: "mcporter call 'tool.method(...)'",
-		agent: "both",
+
 	},
 	{
 		id: "cli-ultracite",
@@ -1508,7 +1510,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 			"Opinionated lint and format doctor for TypeScript projects. Diagnoses and fixes config in one pass.",
 		source: "ultracite",
 		command: "npx ultracite doctor",
-		agent: "both",
+
 	},
 	{
 		id: "skill-find-skills",
@@ -1519,7 +1521,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 			"Routes agents to skills.sh for discovery and installation of battle-tested skills across React, testing, design, and deployment.",
 		source: "knowledge/skills/find-skills/SKILL.md",
 		command: null,
-		agent: "both",
+
 	},
 	{
 		id: "skill-skill-auditor",
@@ -1530,7 +1532,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 			"6-step vetting protocol for any skill before installation: typosquatting, permissions, deps, prompt injection, exfiltration, content.",
 		source: "knowledge/skills/skill-auditor/SKILL.md",
 		command: null,
-		agent: "both",
+
 	},
 	{
 		id: "tool-json-render",
@@ -1541,7 +1543,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 			"Catalog-constrained generative UI with shadcn integration and directives for structured AI output rendering.",
 		source: "@json-render/core",
 		command: "pnpm add @json-render/core",
-		agent: "both",
+
 	},
 	{
 		id: "mcp-clickhouse",
@@ -1553,7 +1555,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 		source: "plugin-clickhouse",
 		command: null,
 		brand: "clickhouse",
-		agent: "both",
+
 	},
 	{
 		id: "provider-ai-gateway",
@@ -1565,7 +1567,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 		source: "@ai-sdk/gateway",
 		command: "pnpm add @ai-sdk/gateway",
 		brand: "vercel",
-		agent: "both",
+
 	},
 	{
 		id: "mcp-neon",
@@ -1577,7 +1579,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 		source: "@neondatabase/mcp-server-neon",
 		command: null,
 		brand: "neon",
-		agent: "both",
+
 	},
 	{
 		id: "mcp-upstash",
@@ -1589,7 +1591,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 		source: "@upstash/mcp-server",
 		command: null,
 		brand: "upstash",
-		agent: "both",
+
 	},
 	{
 		id: "mcp-turso",
@@ -1601,7 +1603,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 		source: "@tursodatabase/mcp-server",
 		command: null,
 		brand: "turso",
-		agent: "both",
+
 	},
 	{
 		id: "mcp-resend",
@@ -1613,7 +1615,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 		source: "resend-mcp",
 		command: null,
 		brand: "resend",
-		agent: "both",
+
 	},
 	{
 		id: "mcp-notion",
@@ -1625,7 +1627,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 		source: "notion-mcp",
 		command: null,
 		brand: "notion",
-		agent: "both",
+
 	},
 	{
 		id: "mcp-brave-search",
@@ -1637,7 +1639,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 		source: "@anthropic/mcp-server-brave",
 		command: null,
 		brand: "brave",
-		agent: "both",
+
 	},
 	{
 		id: "mcp-exa",
@@ -1649,7 +1651,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 		source: "exa-mcp-server",
 		command: null,
 		brand: "exa",
-		agent: "both",
+
 	},
 	{
 		id: "mcp-memory",
@@ -1660,7 +1662,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 			"Persistent knowledge graph for creating entities, relations, and observations that survive across sessions.",
 		source: "@anthropic/mcp-server-memory",
 		command: null,
-		agent: "both",
+
 	},
 	{
 		id: "mcp-cloudflare-workers",
@@ -1672,7 +1674,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 		source: "@cloudflare/mcp-server-cloudflare",
 		command: null,
 		brand: "cloudflare",
-		agent: "both",
+
 	},
 	{
 		id: "mcp-grafana",
@@ -1684,7 +1686,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 		source: "grafana-mcp-server",
 		command: null,
 		brand: "grafana",
-		agent: "both",
+
 	},
 	// -- Document conversion & extraction --
 	{
@@ -1696,7 +1698,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 			"Convert PDFs, Word, Excel, PowerPoint, audio, and YouTube URLs into clean LLM-ready markdown.",
 		source: "microsoft/markitdown",
 		command: "pip install markitdown && markitdown",
-		agent: "both",
+
 	},
 	{
 		id: "tool-langextract",
@@ -1707,7 +1709,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 			"Document extraction engine that outperforms enterprise tools. Handles scanned documents, tables, and complex layouts.",
 		source: "google/langextract",
 		command: "pip install langextract",
-		agent: "both",
+
 	},
 	{
 		id: "tool-nia-docs",
@@ -1718,7 +1720,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 			"Mount any docs site as a virtual filesystem with tree, grep, and cat. Query Stripe/Vercel/any docs without leaving the terminal.",
 		source: "nia-docs",
 		command: "npx nia-docs https://docs.example.com -c \"tree\"",
-		agent: "both",
+
 	},
 	// -- Code quality & static analysis --
 	{
@@ -1730,7 +1732,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 			"Local AST knowledge graph with 22 MCP tools. Computes blast-radius, review context, and dependency edges. 8.2x fewer tokens on average.",
 		source: "tirth8205/code-review-graph",
 		command: "pip install code-review-graph && code-review-graph build",
-		agent: "both",
+
 	},
 	{
 		id: "tool-react-doctor",
@@ -1741,7 +1743,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 			"Automated React codebase health check. Finds stale state, missing deps, component over-renders, and anti-patterns.",
 		source: "react-doctor",
 		command: "npx react-doctor@latest",
-		agent: "both",
+
 	},
 	{
 		id: "tool-ruff",
@@ -1752,7 +1754,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 			"Blazing-fast Python linter and formatter. 100x faster than flake8. Drop-in replacement for flake8, isort, pyupgrade, and more.",
 		source: "astral-sh/ruff",
 		command: "uv tool install ruff && ruff check .",
-		agent: "both",
+
 	},
 	// -- Generative UI --
 	{
@@ -1764,7 +1766,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 			"React renderer for JSON UI specs. Maps AI-generated JSON 1:1 to your component library with type safety and streaming.",
 		source: "@json-render/react",
 		command: "pnpm add @json-render/react",
-		agent: "both",
+
 	},
 	{
 		id: "tool-json-render-next",
@@ -1775,7 +1777,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 			"Full Next.js apps from JSON specs — routes, layouts, SSR, metadata. The end state of generative-UI-first development.",
 		source: "@json-render/next",
 		command: "pnpm add @json-render/next",
-		agent: "both",
+
 	},
 	{
 		id: "tool-json-render-mcp",
@@ -1786,7 +1788,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 			"MCP Apps integration for Claude, ChatGPT, Cursor, and VS Code. Generative UI in any AI context.",
 		source: "@json-render/mcp",
 		command: "pnpm add @json-render/mcp",
-		agent: "both",
+
 	},
 	// -- Audio & video --
 	{
@@ -1798,7 +1800,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 			"Transcribes 60+ min audio in one pass with speaker diarization. Offline, no API costs.",
 		source: "microsoft/VibeVoice",
 		command: "pip install vibevoice",
-		agent: "both",
+
 	},
 	// -- Frontend components --
 	{
@@ -1810,7 +1812,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 			"Apply full design presets across a project — components, themes, colors, fonts, icons in one command.",
 		source: "ui.shadcn.com/docs/cli",
 		command: "npx shadcn apply",
-		agent: "both",
+
 	},
 	{
 		id: "tool-sonner",
@@ -1821,7 +1823,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 			"Opinionated toast component for React. Beautiful defaults, accessible, composable.",
 		source: "emilkowal/sonner",
 		command: "pnpm add sonner",
-		agent: "both",
+
 	},
 	{
 		id: "tool-cmdk",
@@ -1832,7 +1834,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 			"Fast, unstyled command menu React component. Drop-in cmd+K palette for any app.",
 		source: "pacocoursey/cmdk",
 		command: "pnpm add cmdk",
-		agent: "both",
+
 	},
 	// -- Web search & scraping --
 	{
@@ -1845,7 +1847,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 		source: "lightpanda.io",
 		command: "agent-browser open (auto-uses Lightpanda)",
 		brand: "googlechrome",
-		agent: "both",
+
 	},
 	{
 		id: "tool-qmd",
@@ -1856,7 +1858,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 			"Local markdown search engine with hybrid BM25/vector search + LLM re-ranking. Also runs as an MCP server.",
 		source: "tobi/qmd",
 		command: "npx qmd search \"query\"",
-		agent: "both",
+
 	},
 	{
 		id: "tool-fieldtheory",
@@ -1867,7 +1869,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 			"X/Twitter bookmark sync, semantic search, and wiki generation from saved content.",
 		source: "fieldtheory.dev",
 		command: "npm i -g fieldtheory && ft sync",
-		agent: "both",
+
 	},
 	// -- Security & compliance --
 	{
@@ -1879,7 +1881,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 			"Pre-scan every npm/pip/cargo install for malware, typosquatting, and prompt injection before it reaches the machine.",
 		source: "brin-agent-security",
 		command: "Global hook at ~/.cursor/hooks/brin-check.sh",
-		agent: "both",
+
 	},
 	// -- Deployment & hosting --
 	{
@@ -1891,7 +1893,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 			"Open-source PaaS — self-hosted Heroku/Vercel/Netlify alternative with 280+ one-click services.",
 		source: "coolify.io",
 		command: "curl -fsSL https://cdn.coolify.io/install.sh | bash",
-		agent: "both",
+
 	},
 	// -- Design & creative --
 	{
@@ -1903,7 +1905,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 			"OKLCH color space: conversion, palette generation, contrast checking, gamut boundaries, and Tailwind v4 theme tokens.",
 		source: "~/.agents/skills/oklch-skill/SKILL.md",
 		command: null,
-		agent: "both",
+
 	},
 	{
 		id: "tool-heerich",
@@ -1914,7 +1916,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 			"Tiny voxel engine that renders 3D scenes to SVG. Isometric pixel art in code.",
 		source: "meodai/heerich",
 		command: "npm install heerich",
-		agent: "both",
+
 	},
 	// -- Agent frameworks --
 	{
@@ -1926,7 +1928,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 			"Open-source coding agent built on Codex CLI. Alternative terminal-first agent for code tasks.",
 		source: "t3-oss/t3-code",
 		command: "npm install -g t3-code",
-		agent: "both",
+
 	},
 	{
 		id: "tool-cursor-orchestrate",
@@ -1937,7 +1939,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 			"Recursive Cursor SDK agents for fan-out tasks — parallelize across files, services, or approaches.",
 		source: "Cursor SDK + /orchestrate skill",
 		command: null,
-		agent: "hermes",
+
 	},
 	// -- Browser automation extensions --
 	{
@@ -1949,7 +1951,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 			"Learn a site once, save as SKILL.md, amortize discovery cost on all future runs. Persisted browser playbooks.",
 		source: "browserbase/skills",
 		command: null,
-		agent: "both",
+
 	},
 	// -- Animation & 3D libraries --
 	{
@@ -1962,7 +1964,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 		source: "gsap",
 		command: "pnpm add gsap",
 		brand: "gsap",
-		agent: "both",
+
 	},
 	{
 		id: "tool-framer-motion",
@@ -1974,7 +1976,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 		source: "motion",
 		command: "pnpm add motion",
 		brand: "framer",
-		agent: "both",
+
 	},
 	{
 		id: "tool-react-spring",
@@ -1986,7 +1988,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 		source: "@react-spring/web",
 		command: "pnpm add @react-spring/web",
 		brand: "react",
-		agent: "both",
+
 	},
 	{
 		id: "tool-lottie-react",
@@ -1997,7 +1999,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 			"Render After Effects animations as JSON vectors in React. Zero runtime cost, designer-friendly workflow.",
 		source: "lottie-react",
 		command: "pnpm add lottie-react",
-		agent: "both",
+
 	},
 	{
 		id: "tool-react-three-fiber",
@@ -2009,7 +2011,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 		source: "@react-three/fiber",
 		command: "pnpm add @react-three/fiber @react-three/drei three",
 		brand: "react",
-		agent: "both",
+
 	},
 	// -- Context efficiency --
 	{
@@ -2021,7 +2023,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 			"Trim Cursor / Claude Code context to reduce token cost. Evaluate at repo bootstrap for instant savings.",
 		source: "yvgude/lean-ctx",
 		command: "npx lean-ctx",
-		agent: "both",
+
 	},
 	// -- Skills registry --
 	{
@@ -2034,7 +2036,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 		source: "cursor-public/shopify",
 		command: null,
 		brand: "shopify",
-		agent: "both",
+
 	},
 	{
 		id: "plugin-firebase",
@@ -2046,7 +2048,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 		source: "cursor-public/firebase",
 		command: null,
 		brand: "firebase",
-		agent: "both",
+
 	},
 	{
 		id: "plugin-sanity",
@@ -2057,7 +2059,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 			"4 skills: Sanity best practices, content modeling, SEO/AEO, and content experimentation.",
 		source: "cursor-public/sanity",
 		command: null,
-		agent: "both",
+
 	},
 	{
 		id: "plugin-figma",
@@ -2069,7 +2071,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 		source: "cursor-public/figma",
 		command: null,
 		brand: "figma",
-		agent: "both",
+
 	},
 	{
 		id: "plugin-stripe",
@@ -2081,7 +2083,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 		source: "cursor-public/stripe",
 		command: null,
 		brand: "stripe",
-		agent: "both",
+
 	},
 	{
 		id: "plugin-clickhouse",
@@ -2093,7 +2095,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 		source: "cursor-public/clickhouse",
 		command: null,
 		brand: "clickhouse",
-		agent: "both",
+
 	},
 	{
 		id: "plugin-datadog",
@@ -2105,7 +2107,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 		source: "cursor-public/datadog",
 		command: null,
 		brand: "datadog",
-		agent: "both",
+
 	},
 	{
 		id: "plugin-supabase",
@@ -2117,7 +2119,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 		source: "cursor-public/supabase",
 		command: null,
 		brand: "supabase",
-		agent: "both",
+
 	},
 	// -- Misc agent utilities --
 	{
@@ -2130,7 +2132,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 		source: "wiki/tools/floci.md",
 		command: "floci",
 		brand: "amazonwebservices",
-		agent: "both",
+
 	},
 	{
 		id: "tool-graphite",
@@ -2142,7 +2144,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 		source: "graphite.dev",
 		command: "gt (Graphite CLI)",
 		brand: "github",
-		agent: "both",
+
 	},
 	{
 		id: "tool-zero-native",
@@ -2154,7 +2156,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 		source: "zero-native.dev",
 		command: null,
 		brand: "vercel",
-		agent: "both",
+
 	},
 ];
 
@@ -2181,7 +2183,7 @@ export function buildTrustedAddOnCatalog({
 			description: skill.description,
 			source: `knowledge/skills/${skill.slug}/SKILL.md`,
 			command: null,
-			agent: "both",
+	
 		});
 	}
 	for (const tool of builtins) {
@@ -2193,7 +2195,6 @@ export function buildTrustedAddOnCatalog({
 			description: tool.description,
 			source: `builtin:${tool.name}`,
 			command: tool.name,
-			agent: tool.agent,
 		});
 	}
 	for (const server of mcps) {
@@ -2205,7 +2206,7 @@ export function buildTrustedAddOnCatalog({
 			description: `${server.transport} MCP server exposing ${server.tools.length} callable tools.`,
 			source: server.link ?? server.source,
 			command: null,
-			agent: "both",
+	
 		});
 		for (const tool of server.tools) {
 			items.push({
@@ -2216,7 +2217,7 @@ export function buildTrustedAddOnCatalog({
 				description: tool.description,
 				source: `${server.name}:${tool.name}`,
 				command: tool.name,
-				agent: "both",
+		
 			});
 		}
 	}
@@ -2231,7 +2232,7 @@ export function buildTrustedAddOnCatalog({
 				source: iface.label,
 				command: iface.kind === "cli" ? iface.label : null,
 				brand: service.brand,
-				agent: "both",
+		
 			});
 		}
 	}
@@ -2246,7 +2247,7 @@ export function buildTrustedAddOnCatalog({
 				source: tool.skill ?? tool.label,
 				command: tool.skill ? null : tool.label,
 				brand: tool.brand,
-				agent: "both",
+		
 			});
 		}
 	}

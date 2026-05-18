@@ -19,11 +19,11 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
 export async function POST(): Promise<Response> {
-	const userId = await getEffectiveUserId();
-	if (!userId) {
-		return Response.json({ error: "unauthorized" }, { status: 401 });
-	}
 	try {
+		const userId = await getEffectiveUserId();
+		if (!userId) {
+			return Response.json({ error: "unauthorized" }, { status: 401 });
+		}
 		const summary = await sleepActiveMachine();
 		return Response.json(summary, {
 			headers: { "Cache-Control": "no-store" },

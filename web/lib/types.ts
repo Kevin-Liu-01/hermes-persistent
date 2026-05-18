@@ -34,6 +34,12 @@ export type AgentMeta = {
 	githubUrl: string;
 	logoMark: CompositeMark;
 	serviceSlug: ServiceSlug | null;
+	/**
+	 * Built-in tool names this agent ships natively. Tools NOT in this
+	 * list are still available -- the rig provides them -- but the UI
+	 * shows which tools come from the agent vs. the rig infrastructure.
+	 */
+	nativeToolNames: ReadonlyArray<string>;
 };
 
 /* ------------------------------------------------------------------ */

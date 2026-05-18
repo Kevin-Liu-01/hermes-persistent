@@ -7,10 +7,12 @@ import { ReticleBadge } from "@/components/reticle/ReticleBadge";
 import { ReticleFrame } from "@/components/reticle/ReticleFrame";
 import { ServiceIcon, isServiceSlug } from "@/components/ServiceIcon";
 import { ToolIcon } from "@/components/ToolIcon";
+import { cn } from "@/lib/cn";
 import {
 	CATEGORY_LABEL,
 	INTERFACE_LABEL,
-	type AgentSupport,
+	TOOL_AGENT_SUPPORT,
+	type AgentToolBadge,
 	type BuiltinTool,
 	type ServiceEntry,
 	type TaskEntry,
@@ -23,15 +25,6 @@ import type { SkillSummary } from "@/lib/dashboard/types";
 
 const MARK_SET = new Set<string>(["dedalus", "nous", "cursor", "openclaw", "anthropic", "openai"]);
 function isMark(value: string): value is Mark { return MARK_SET.has(value); }
-
-const AGENT_BADGE: Record<
-	AgentSupport,
-	{ label: string; tone: "accent" | "default" | "warning" }
-> = {
-	hermes: { label: "hermes", tone: "default" },
-	openclaw: { label: "openclaw", tone: "warning" },
-	both: { label: "both agents", tone: "accent" },
-};
 
 const CATALOG_ICON: Record<TrustedAddOn["kind"], ToolCategory> = {
 	skill: "memory",
@@ -57,8 +50,8 @@ const CATALOG_BADGE: Record<
 };
 
 export function BuiltinCard({ tool }: { tool: BuiltinTool }) {
-	const agent = AGENT_BADGE[tool.agent];
 	const provider = tool.provider === "rig" ? null : tool.provider;
+	const badges = TOOL_AGENT_SUPPORT.get(tool.name) ?? [];
 	return (
 		<ReticleFrame>
 			<div className="flex items-start justify-between gap-2 border-b border-[var(--ret-border)] px-3 py-2">
@@ -76,9 +69,6 @@ export function BuiltinCard({ tool }: { tool: BuiltinTool }) {
 						{tool.name}
 					</span>
 				</div>
-				<ReticleBadge variant={agent.tone} className="text-[10px]">
-					{agent.label}
-				</ReticleBadge>
 			</div>
 			<div className="space-y-2 p-3">
 				<p className="text-[12px] font-semibold tracking-tight text-[var(--ret-text)]">
@@ -87,17 +77,56 @@ export function BuiltinCard({ tool }: { tool: BuiltinTool }) {
 				<p className="text-[11px] leading-relaxed text-[var(--ret-text-dim)]">
 					{tool.description}
 				</p>
-				<p className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--ret-text-muted)]">
-					<ToolIcon name={tool.category} size={10} />
-					{CATEGORY_LABEL[tool.category]}
-				</p>
+				<div className="flex items-center justify-between gap-2">
+					<p className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--ret-text-muted)]">
+						<ToolIcon name={tool.category} size={10} />
+						{CATEGORY_LABEL[tool.category]}
+					</p>
+				</div>
+				{badges.length > 0 ? (
+					<AgentSupportRow badges={badges} />
+				) : null}
 			</div>
 		</ReticleFrame>
 	);
 }
 
+function AgentSupportRow({ badges }: { badges: ReadonlyArray<AgentToolBadge> }) {
+	const nativeCount = badges.filter((b) => b.native).length;
+	return (
+		<div className="flex flex-wrap items-center gap-1 border-t border-[var(--ret-border)] pt-2">
+			{badges.map((badge) => (
+				<span
+					key={badge.agentId}
+					title={
+						badge.native
+							? `${badge.agentName} ships this natively`
+							: `${badge.agentName} gets this from the rig`
+					}
+					className={cn(
+						"inline-flex items-center gap-1 px-1.5 py-0.5 font-mono text-[9px] tracking-[0.08em]",
+						badge.native
+							? "border border-[var(--ret-purple)]/30 bg-[var(--ret-purple-glow)] text-[var(--ret-purple)]"
+							: "border border-[var(--ret-border)] text-[var(--ret-text-muted)]",
+					)}
+				>
+					<Logo mark={badge.mark} size={10} />
+					{badge.agentName}
+					{badge.native ? null : (
+						<span className="text-[8px] opacity-60">rig</span>
+					)}
+				</span>
+			))}
+			{nativeCount === badges.length ? (
+				<span className="ml-auto font-mono text-[9px] uppercase tracking-[0.16em] text-[var(--ret-text-muted)]">
+					all native
+				</span>
+			) : null}
+		</div>
+	);
+}
+
 export function CatalogCard({ item }: { item: TrustedAddOn }) {
-	const agent = AGENT_BADGE[item.agent];
 	const icon = CATALOG_ICON[item.kind];
 	return (
 		<ReticleFrame>
@@ -140,9 +169,6 @@ export function CatalogCard({ item }: { item: TrustedAddOn }) {
 						</p>
 					) : null}
 				</div>
-				<ReticleBadge variant={agent.tone} className="text-[10px]">
-					{agent.label}
-				</ReticleBadge>
 			</div>
 		</ReticleFrame>
 	);

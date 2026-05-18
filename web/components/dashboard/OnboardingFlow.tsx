@@ -21,7 +21,6 @@ import { cn } from "@/lib/cn";
 import {
 	BUILTIN_TOOLS,
 	CATEGORY_LABEL,
-	type AgentSupport,
 	type BuiltinTool,
 	type ToolCategory,
 } from "@/lib/dashboard/loadout";
@@ -851,10 +850,6 @@ function ToolsStep({
 		return Object.entries(m).sort(([a], [b]) => a.localeCompare(b));
 	}, [builtins]);
 
-	function relevantToAgent(t: BuiltinTool): AgentSupport {
-		return t.agent;
-	}
-
 	return (
 		<div className="space-y-5">
 			<div>
@@ -928,9 +923,7 @@ function ToolsStep({
 							<div className="grid gap-1 sm:grid-cols-2">
 								{list.map((t) => {
 									const on = builtinSelected.has(t.name);
-									const supports = relevantToAgent(t);
-									const dim =
-										supports !== "both" && supports !== agent;
+									const dim = false;
 									return (
 										<label
 											key={t.name}

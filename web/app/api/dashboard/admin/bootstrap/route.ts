@@ -28,7 +28,16 @@ export async function POST(request: Request): Promise<Response> {
 	}
 
 	const body = (await request.json().catch(() => ({}))) as Body;
-	const config = await getUserConfig();
+	let config: Awaited<ReturnType<typeof getUserConfig>>;
+	try {
+		config = await getUserConfig();
+	} catch (err) {
+		const message = err instanceof Error ? err.message : "config read failed";
+		return Response.json(
+			{ error: "config_read_failed", message },
+			{ status: 500 },
+		);
+	}
 	const machine = resolveMachine(config.machines, body.machineId ?? config.activeMachineId);
 	if (!machine) {
 		return Response.json(

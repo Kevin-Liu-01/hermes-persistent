@@ -51,21 +51,29 @@ export async function GET(): Promise<Response> {
 	if (!userId) {
 		return Response.json({ error: "unauthorized" }, { status: 401 });
 	}
-	const config = await getUserConfig();
-	return Response.json({
-		config: toPublicConfig(config),
-		secretStatus: {
-			gatewayProfiles: Object.fromEntries(
-				config.gatewayProfiles.map((profile) => [profile.id, Boolean(profile.apiKey)]),
-			),
-			environmentProfiles: Object.fromEntries(
-				config.environmentProfiles.map((profile) => [
-					profile.id,
-					Object.keys(profile.vars).length,
-				]),
-			),
-		},
-	});
+	try {
+		const config = await getUserConfig();
+		return Response.json({
+			config: toPublicConfig(config),
+			secretStatus: {
+				gatewayProfiles: Object.fromEntries(
+					config.gatewayProfiles.map((profile) => [profile.id, Boolean(profile.apiKey)]),
+				),
+				environmentProfiles: Object.fromEntries(
+					config.environmentProfiles.map((profile) => [
+						profile.id,
+						Object.keys(profile.vars).length,
+					]),
+				),
+			},
+		});
+	} catch (err) {
+		const message = err instanceof Error ? err.message : "settings read failed";
+		return Response.json(
+			{ error: "read_failed", message },
+			{ status: 500 },
+		);
+	}
 }
 
 export async function POST(request: Request): Promise<Response> {
@@ -73,59 +81,59 @@ export async function POST(request: Request): Promise<Response> {
 	if (!userId) {
 		return Response.json({ error: "unauthorized" }, { status: 401 });
 	}
-	const current = await getUserConfig();
-	const input = (await request.json().catch(() => ({}))) as SettingsBody;
-	let body = input;
-	if (input.syncFromMachine) {
-		try {
-			body = await readMachineSettings();
-		} catch (err) {
-			return Response.json(
-				{
-					error: "machine_settings_unavailable",
-					message:
-						err instanceof Error
-							? err.message
-							: "could not read machine settings.json",
-				},
-				{ status: 502 },
+	try {
+		const current = await getUserConfig();
+		const input = (await request.json().catch(() => ({}))) as SettingsBody;
+		let body = input;
+		if (input.syncFromMachine) {
+			try {
+				body = await readMachineSettings();
+			} catch (err) {
+				return Response.json(
+					{
+						error: "machine_settings_unavailable",
+						message:
+							err instanceof Error
+								? err.message
+								: "could not read machine settings.json",
+					},
+					{ status: 502 },
+				);
+			}
+		}
+
+		const patch: Parameters<typeof setUserConfig>[0] = {};
+		if (body.providers) patch.providers = body.providers;
+		if (body.aiProviderKeys) patch.aiProviderKeys = body.aiProviderKeys;
+		if (body.cursorApiKey !== undefined) {
+			patch.cursorApiKey = body.cursorApiKey;
+		}
+		if (body.gatewayProfiles) {
+			patch.gatewayProfiles = body.gatewayProfiles.map((profile) =>
+				mergeGatewayProfile(profile, current.gatewayProfiles),
 			);
 		}
-	}
+		if (body.agentProfiles) patch.agentProfiles = body.agentProfiles;
+		if (body.environmentProfiles) {
+			patch.environmentProfiles = body.environmentProfiles.map((profile) =>
+				mergeEnvironmentProfile(profile, current.environmentProfiles),
+			);
+		}
+		if (body.bootstrapPresets) patch.bootstrapPresets = body.bootstrapPresets;
+		if (body.customLoadout) patch.customLoadout = body.customLoadout;
+		if (body.loadoutSources) patch.loadoutSources = body.loadoutSources;
+		if (body.loadoutPresets) patch.loadoutPresets = body.loadoutPresets;
+		if (body.activeLoadoutPresetId) {
+			patch.activeLoadoutPresetId = body.activeLoadoutPresetId;
+		}
 
-	const patch: Parameters<typeof setUserConfig>[0] = {};
-	if (body.providers) patch.providers = body.providers;
-	if (body.aiProviderKeys) patch.aiProviderKeys = body.aiProviderKeys;
-	if (body.cursorApiKey !== undefined) {
-		patch.cursorApiKey = body.cursorApiKey;
-	}
-	if (body.gatewayProfiles) {
-		patch.gatewayProfiles = body.gatewayProfiles.map((profile) =>
-			mergeGatewayProfile(profile, current.gatewayProfiles),
-		);
-	}
-	if (body.agentProfiles) patch.agentProfiles = body.agentProfiles;
-	if (body.environmentProfiles) {
-		patch.environmentProfiles = body.environmentProfiles.map((profile) =>
-			mergeEnvironmentProfile(profile, current.environmentProfiles),
-		);
-	}
-	if (body.bootstrapPresets) patch.bootstrapPresets = body.bootstrapPresets;
-	if (body.customLoadout) patch.customLoadout = body.customLoadout;
-	if (body.loadoutSources) patch.loadoutSources = body.loadoutSources;
-	if (body.loadoutPresets) patch.loadoutPresets = body.loadoutPresets;
-	if (body.activeLoadoutPresetId) {
-		patch.activeLoadoutPresetId = body.activeLoadoutPresetId;
-	}
-
-	try {
 		const next = await setUserConfig(patch);
 		return Response.json({ config: toPublicConfig(next) });
 	} catch (err) {
 		const message = err instanceof Error ? err.message : "settings save failed";
 		return Response.json(
 			{ error: "save_failed", message },
-			{ status: 502 },
+			{ status: 500 },
 		);
 	}
 }
