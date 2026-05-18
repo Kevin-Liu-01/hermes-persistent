@@ -119,9 +119,9 @@ export function MachinesPanel() {
 		<DashboardPageBody>
 			{error ? (
 				<ReticleFrame className="border-[var(--ret-red)]/50 bg-[var(--ret-red)]/5 p-3">
-					<p className="font-mono text-[11px] text-[var(--ret-red)]">
-						error: {error}
-					</p>
+				<p className="text-[11px] text-[var(--ret-red)]">
+					error: {error}
+				</p>
 				</ReticleFrame>
 			) : null}
 
@@ -304,10 +304,10 @@ function MachineCard({
 	return (
 		<ReticleFrame>
 			<div
-				role={machine.archived ? undefined : "link"}
-				tabIndex={machine.archived ? undefined : 0}
-				onClick={handleDrillIn}
-				onKeyDown={(e) => { if (e.key === "Enter") handleDrillIn(); }}
+			role={machine.archived ? undefined : "link"}
+			tabIndex={machine.archived ? undefined : 0}
+			onClick={handleDrillIn}
+			onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleDrillIn(); } }}
 				className={cn(
 					"flex items-center justify-between border-b border-[var(--ret-border)] px-4 py-2 text-[11px]",
 					!machine.archived && "cursor-pointer transition-colors hover:bg-[var(--ret-surface)]",
@@ -315,9 +315,9 @@ function MachineCard({
 			>
 				<div className="flex items-center gap-2 min-w-0">
 					{providerLogo ? <Logo mark={providerLogo} size={14} /> : null}
-					<span className="truncate font-mono text-[12px] text-[var(--ret-text)]">
-						{machine.name}
-					</span>
+				<span className="truncate text-[12px] text-[var(--ret-text)]">
+					{machine.name}
+				</span>
 					{active ? (
 						<ReticleBadge variant="accent" className="text-[10px]">
 							active
@@ -351,8 +351,8 @@ function MachineCard({
 			</dl>
 			{providerMessage ? (
 				<p
-					className={cn(
-						"border-t border-[var(--ret-border)] px-4 py-2 font-mono text-[10px]",
+				className={cn(
+					"border-t border-[var(--ret-border)] px-4 py-2 text-[10px]",
 						isActualError
 							? "bg-[var(--ret-red)]/5 text-[var(--ret-red)]"
 							: "bg-[var(--ret-amber)]/5 text-[var(--ret-amber)]",
@@ -363,8 +363,8 @@ function MachineCard({
 				</p>
 			) : null}
 			{!machine.live.ok ? (
-				<p className="border-t border-[var(--ret-border)] bg-[var(--ret-amber)]/5 px-4 py-2 font-mono text-[10px] text-[var(--ret-amber)]">
-					probe failed: {machine.live.reason.slice(0, 240)}
+			<p className="border-t border-[var(--ret-border)] bg-[var(--ret-amber)]/5 px-4 py-2 text-[10px] text-[var(--ret-amber)]">
+				probe failed: {machine.live.reason.slice(0, 240)}
 				</p>
 			) : null}
 			{editing ? (
@@ -378,7 +378,7 @@ function MachineCard({
 					onSaved={onSavedEdit}
 				/>
 			) : (
-				<div className="flex flex-wrap items-center justify-between gap-2 border-t border-[var(--ret-border)] px-4 py-2 font-mono text-[11px]">
+				<div className="flex flex-wrap items-center justify-between gap-2 border-t border-[var(--ret-border)] px-4 py-2 text-[11px]">
 					<span className="text-[var(--ret-text-muted)]">
 						{machine.apiUrl ? (
 							<>
@@ -543,7 +543,7 @@ function EditPanel({
 	return (
 		<div className="space-y-3 border-t border-[var(--ret-border)] bg-[var(--ret-surface)] px-4 py-3">
 			{err ? (
-				<p className="font-mono text-[11px] text-[var(--ret-red)]">
+				<p className="text-[11px] text-[var(--ret-red)]">
 					{err}
 				</p>
 			) : null}
@@ -648,10 +648,10 @@ function QuickProvisionForm({
 					Quick provision
 				</p>
 				{err ? (
-					<p className="font-mono text-[11px] text-[var(--ret-red)]">{err}</p>
+					<p className="text-[11px] text-[var(--ret-red)]">{err}</p>
 				) : null}
 				{result ? (
-					<p className="font-mono text-[11px] text-[var(--ret-green)]">{result}</p>
+					<p className="text-[11px] text-[var(--ret-green)]">{result}</p>
 				) : null}
 				<div className="grid gap-3 md:grid-cols-3">
 					<label className="flex flex-col gap-1.5">

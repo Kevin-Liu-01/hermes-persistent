@@ -81,7 +81,7 @@ export function StackRow() {
 												rel="noreferrer"
 												className="inline-flex items-center gap-1 border border-[var(--ret-border)] bg-[var(--ret-surface)] px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--ret-text-dim)] transition-colors hover:border-[var(--ret-purple)]/40 hover:text-[var(--ret-purple)]"
 											>
-												{l.label} {"->"}
+												{l.label} →
 											</a>
 										))}
 									</div>

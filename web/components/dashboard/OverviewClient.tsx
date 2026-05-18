@@ -404,9 +404,9 @@ function MachineControlBar({
 				{isTransitioning ? (
 					<ReticleBadge variant="warning">in transition</ReticleBadge>
 				) : null}
-				<p className="font-mono text-[11px] text-[var(--ret-text-dim)] truncate">
-					{message}
-				</p>
+			<p className="text-[11px] text-[var(--ret-text-dim)] truncate">
+				{message}
+			</p>
 			</div>
 			<div className="flex items-center gap-2">
 				{isSleeping ? (

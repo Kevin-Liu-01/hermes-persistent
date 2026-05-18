@@ -27,12 +27,13 @@ import { withActiveMachine } from "@/lib/storage/machine-fs";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET(): Promise<Response> {
+export async function GET(request: Request): Promise<Response> {
 	const userId = await getEffectiveUserId();
 	if (!userId) {
 		return Response.json({ error: "unauthorized" }, { status: 401 });
 	}
-	const handle = await withActiveMachine();
+	const machineId = new URL(request.url).searchParams.get("machineId") ?? undefined;
+	const handle = await withActiveMachine(machineId);
 	if ("ok" in handle) {
 		return Response.json({ ...handle, chats: [] });
 	}
@@ -57,15 +58,16 @@ export async function POST(request: Request): Promise<Response> {
 	if (!userId) {
 		return Response.json({ error: "unauthorized" }, { status: 401 });
 	}
-	const handle = await withActiveMachine();
-	if ("ok" in handle) {
-		return Response.json(handle, { status: 503 });
-	}
 	let body: ChatRecord;
 	try {
 		body = (await request.json()) as ChatRecord;
 	} catch {
 		return Response.json({ error: "invalid_json" }, { status: 400 });
+	}
+	const machineId = (body as Record<string, unknown>).machineId as string | undefined;
+	const handle = await withActiveMachine(machineId);
+	if ("ok" in handle) {
+		return Response.json(handle, { status: 503 });
 	}
 	if (!body.id || typeof body.id !== "string") {
 		return Response.json({ error: "id_required" }, { status: 422 });
@@ -99,11 +101,12 @@ export async function DELETE(request: Request): Promise<Response> {
 	if (!userId) {
 		return Response.json({ error: "unauthorized" }, { status: 401 });
 	}
-	const handle = await withActiveMachine();
+	const url = new URL(request.url);
+	const machineId = url.searchParams.get("machineId") ?? undefined;
+	const handle = await withActiveMachine(machineId);
 	if ("ok" in handle) {
 		return Response.json(handle, { status: 503 });
 	}
-	const url = new URL(request.url);
 	const id = url.searchParams.get("id");
 	if (!id) return Response.json({ error: "id_required" }, { status: 422 });
 	try {

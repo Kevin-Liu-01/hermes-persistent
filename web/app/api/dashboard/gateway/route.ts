@@ -18,15 +18,17 @@ import { resolveGatewayForUser } from "@/lib/gateway/resolver";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET(): Promise<Response> {
+export async function GET(request: Request): Promise<Response> {
 	const userId = await getEffectiveUserId();
 	if (!userId) {
 		return Response.json({ error: "unauthorized" }, { status: 401 });
 	}
 
+	const machineId = new URL(request.url).searchParams.get("machineId") ?? undefined;
+
 	let env: Awaited<ReturnType<typeof resolveGatewayForUser>>;
 	try {
-		env = await resolveGatewayForUser();
+		env = await resolveGatewayForUser(machineId);
 	} catch (err) {
 		const message = err instanceof Error ? err.message : "config_error";
 		return Response.json(

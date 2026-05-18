@@ -18,6 +18,7 @@
  *  14. API health external  (/v1/models, auth enforcement, response shape)
  *  15. End-to-end chat      (real chat completion through the gateway)
  *  16. Web dashboard        (deps, .env.local, all required keys, skills.json freshness, typecheck)
+ *  17. Live-fire QA checks  (dpkg lock readiness, gateway log recency, quota headroom, routing sanity)
  *
  * Every check runs a real bash command. The doctor never modifies state.
  */
@@ -989,6 +990,84 @@ async function checkWebDashboard(): Promise<void> {
 }
 
 // ═══════════════════════════════════════════════════════════════════
+// 17. Live-fire QA checks
+// ═══════════════════════════════════════════════════════════════════
+
+async function checkLiveFireQa(
+	client: ReturnType<typeof makeClient>,
+	id: string,
+): Promise<void> {
+	header("17 · Live-fire QA checks");
+
+	// 1. dpkg lock readiness
+	const dpkgLocked = await check(
+		client, id,
+		`fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1`,
+	);
+	if (dpkgLocked) {
+		WARN("dpkg lock", "held by another process -- apt operations may fail");
+	} else {
+		pass("dpkg lock", "free");
+	}
+
+	// 2. Gateway log recency (last entry within 5 minutes)
+	const logPath = `${VM_HERMES_HOME}/logs/gateway.log`;
+	const hasLog = await check(client, id, `test -s ${logPath}`);
+	if (hasLog) {
+		const recent = await check(
+			client, id,
+			`find ${logPath} -mmin -5 | grep -q .`,
+		);
+		recent
+			? pass("Gateway log recency", "updated within 5 min")
+			: WARN("Gateway log recency", "no writes in last 5 minutes -- possible crash or stall");
+
+		const crashIndicator = await check(
+			client, id,
+			`head -20 ${logPath} | grep -qi 'traceback\\|CRITICAL\\|segfault'`,
+		);
+		if (crashIndicator) {
+			WARN("Gateway startup", "crash indicators in first 20 lines");
+		} else {
+			pass("Gateway startup", "no crash in early log");
+		}
+	} else {
+		WARN("Gateway log", "empty or missing -- gateway may not have started");
+	}
+
+	// 3. Machine quota headroom
+	let config: Config;
+	try {
+		config = loadConfig();
+	} catch {
+		WARN("Quota check", "cannot load config");
+		return;
+	}
+	try {
+		const listClient = makeClient(config);
+		const machines = await listClient.machines.list();
+		const items = machines.items ?? [];
+		const total = items.length;
+		if (total >= 4) {
+			WARN("Machine quota", `${total}/5 slots used -- near capacity`);
+		} else {
+			pass("Machine quota", `${total}/5 slots used`);
+		}
+	} catch (err) {
+		WARN("Machine quota", `could not list machines: ${(err instanceof Error ? err.message : String(err)).slice(0, 100)}`);
+	}
+
+	// 4. Per-machine routing sanity
+	const state = loadState();
+	if (state?.machineId) {
+		const match = state.machineId === id;
+		match
+			? pass("Routing sanity", "active machine matches doctor target")
+			: WARN("Routing sanity", `state file has ${state.machineId} but doctor is checking ${id} -- potential drift`);
+	}
+}
+
+// ═══════════════════════════════════════════════════════════════════
 // Flags + main
 // ═══════════════════════════════════════════════════════════════════
 
@@ -1043,6 +1122,11 @@ export async function doctor(args: string[]): Promise<void> {
 		// ── E2E ──
 		if (!flags.quick && ctx) {
 			await checkEndToEnd(ctx.client, ctx.machineId);
+		}
+
+		// ── Live-fire QA ──
+		if (!flags.quick && ctx) {
+			await checkLiveFireQa(ctx.client, ctx.machineId);
 		}
 	}
 

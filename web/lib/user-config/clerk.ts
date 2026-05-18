@@ -23,6 +23,9 @@
 
 import { clerkClient } from "@clerk/nextjs/server";
 
+import { listMachines, seedMachinesFromClerk, upsertMachine, patchMachine as sbPatchMachine, archiveMachine as sbArchiveMachine, deleteMachine as sbDeleteMachine } from "@/lib/supabase/machines";
+import { ensureUser } from "@/lib/supabase/users";
+
 import { getDevUserConfig, setDevUserConfig } from "./dev-store";
 import { getEffectiveUserId, isDevUserId } from "./identity";
 import {
@@ -519,15 +522,36 @@ export async function getUserConfig(): Promise<UserConfig> {
 }
 
 export async function getUserConfigById(userId: string): Promise<UserConfig> {
-	// Dev bypass: route the local dev identity to the file-backed
-	// store. Lets the dashboard read/write a UserConfig without
-	// hitting Clerk at all when ALLOW_DEV_AUTH=1 is set locally.
 	if (isDevUserId(userId)) return getDevUserConfig();
 	const client = await clerkClient();
 	const user = await client.users.getUser(userId);
 	const publicMeta = (user.publicMetadata ?? {}) as RawPublic;
 	const privateMeta = (user.privateMetadata ?? {}) as RawPrivate;
-	return buildConfig(publicMeta, privateMeta);
+	const config = buildConfig(publicMeta, privateMeta);
+
+	if (!process.env.NEXT_PUBLIC_SUPABASE_URL) return config;
+
+	try {
+		await ensureUser(userId, user.emailAddresses?.[0]?.emailAddress);
+		const sbMachines = await listMachines(userId);
+
+		if (sbMachines.length > 0) {
+			const machineApiKeys =
+				(privateMeta.machineApiKeys as Record<string, string> | undefined) ?? {};
+			config.machines = sbMachines.map((m) => ({
+				...m,
+				apiKey: m.apiKey ?? machineApiKeys[m.id] ?? null,
+			}));
+		} else if (config.machines.length > 0) {
+			await seedMachinesFromClerk(userId, config.machines);
+		}
+
+		config.metricsEnabled = true;
+	} catch {
+		// Supabase unavailable -- fall back to Clerk-only machines
+	}
+
+	return config;
 }
 
 /* ------------------------------------------------------------------ */
@@ -919,6 +943,32 @@ export async function setUserConfigById(
 		publicMetadata: nextPublic,
 		privateMetadata: nextPrivate,
 	});
+
+	if (process.env.NEXT_PUBLIC_SUPABASE_URL) {
+		try {
+			if (patch.upsertMachine) {
+				await upsertMachine(userId, patch.upsertMachine);
+			}
+			if (patch.patchMachine) {
+				await sbPatchMachine(userId, patch.patchMachine.id, patch.patchMachine.patch);
+			}
+			if (patch.archiveMachine) {
+				await sbArchiveMachine(userId, patch.archiveMachine);
+			}
+			if (patch.removeMachine) {
+				await sbDeleteMachine(userId, patch.removeMachine);
+			}
+			if (patch.unarchiveMachine) {
+				await sbPatchMachine(userId, patch.unarchiveMachine, { archived: false });
+			}
+			if (patch.activeMachineId !== undefined) {
+				const { updateUser } = await import("@/lib/supabase/users");
+				await updateUser(userId, { active_machine_id: patch.activeMachineId ?? undefined });
+			}
+		} catch {
+			// Supabase write failed -- Clerk is still the source of truth
+		}
+	}
 
 	return buildConfig(nextPublic, nextPrivate);
 }

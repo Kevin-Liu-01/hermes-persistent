@@ -15,7 +15,6 @@ import type {
 	LogLine,
 	LogsPayload,
 } from "@/lib/dashboard/types";
-import { getUserConfig } from "@/lib/user-config/clerk";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -58,19 +57,9 @@ export async function GET(request: Request): Promise<Response> {
 		? Math.min(MAX_N, Math.max(20, Math.floor(requested)))
 		: DEFAULT_N;
 
-	const config = await getUserConfig();
-	const active = config.machines.find((m) => m.id === config.activeMachineId);
-	if (!active || !config.providers.dedalus?.apiKey) {
-		const envelope: LiveDataEnvelope<LogsPayload> = {
-			ok: false,
-			reason: "config_missing",
-			message:
-				"No machine configured. Complete /dashboard/setup to provision.",
-		};
-		return Response.json(envelope);
-	}
+	const machineId = url.searchParams.get("machineId") ?? undefined;
 
-	if (!(await isMachineRunning())) {
+	if (!(await isMachineRunning(machineId))) {
 		const envelope: LiveDataEnvelope<LogsPayload> = {
 			ok: false,
 			reason: "machine_offline",
@@ -89,6 +78,7 @@ export async function GET(request: Request): Promise<Response> {
 				"mkdir -p $HOME/.agent-machines/logs",
 				"find $HOME/.agent-machines/logs -maxdepth 2 -type f \\( -name '*.log' -o -name 'gateway.log' \\) -printf '%p\\t%s\\n' 2>/dev/null | sort",
 			].join(" && "),
+			{ machineId },
 		);
 		const files = inventoryOut.stdout
 			.split("\n")
@@ -107,6 +97,7 @@ export async function GET(request: Request): Promise<Response> {
 		// asking for n=200 can see up to 200 lines from the runtime.
 		const agentOut = await execOnMachine(
 			`if compgen -G "$HOME/.agent-machines/logs/*.log" > /dev/null; then tail -n ${tailLines} $HOME/.agent-machines/logs/*.log 2>/dev/null; else echo ""; fi`,
+			{ machineId },
 		);
 
 		function tailToLines(stdout: string, source: string): LogLine[] {

@@ -102,7 +102,7 @@ export function Logo({ mark, size = 18, className, tone }: Props) {
 		return (
 			<span
 				role="img"
-				aria-label="Hermes or OpenClaw"
+				aria-label="Agent runtime"
 				className={cn("inline-flex items-center", className)}
 				style={{ width: `${pairWidth}px`, height: `${size}px` }}
 			>

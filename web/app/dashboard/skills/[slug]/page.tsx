@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -30,7 +31,7 @@ export default async function SkillDetailPage({
 				description={skill.description}
 				right={
 					<ReticleButton as="a" href="/dashboard/skills" variant="ghost" size="sm">
-						<span aria-hidden>{"<-"}</span>
+						<span aria-hidden>←</span>
 						<span className="ml-1.5">All skills</span>
 					</ReticleButton>
 				}
@@ -88,7 +89,7 @@ function MetaBlock({
 	children,
 }: {
 	title: string;
-	children: React.ReactNode;
+	children: ReactNode;
 }) {
 	return (
 		<div className="border border-[var(--ret-border)] bg-[var(--ret-bg)] p-4">

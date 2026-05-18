@@ -445,8 +445,8 @@ export function OnboardingFlow({
 							href="/dashboard"
 							className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--ret-text-muted)] hover:text-[var(--ret-text)]"
 						>
-							{"skip ->"}
-						</a>
+					skip →
+					</a>
 					</div>
 				</div>
 			</header>
@@ -456,11 +456,11 @@ export function OnboardingFlow({
 					<StepRail step={step} />
 
 					{error ? (
-						<ReticleFrame className="mt-4 border-[var(--ret-red)]/50 bg-[var(--ret-red)]/5 p-3">
-							<p className="font-mono text-[11px] text-[var(--ret-red)]">
-								{error}
-							</p>
-						</ReticleFrame>
+					<ReticleFrame className="mt-4 border-[var(--ret-red)]/50 bg-[var(--ret-red)]/5 p-3">
+						<p className="text-[11px] text-[var(--ret-red)]">
+							{error}
+						</p>
+					</ReticleFrame>
 					) : null}
 
 					<div className="mt-6">
@@ -605,10 +605,10 @@ function StepRail({ step }: { step: Step }) {
 							{isDone ? "ok" : idx + 1}
 						</span>
 						<span className="min-w-0">
-							<p className="truncate font-mono text-[11px] text-[var(--ret-text)]">
+							<p className="truncate text-[11px] text-[var(--ret-text)]">
 								{s.label}
 							</p>
-							<p className="truncate font-mono text-[10px] text-[var(--ret-text-muted)]">
+							<p className="truncate text-[10px] text-[var(--ret-text-muted)]">
 								{s.hint}
 							</p>
 						</span>
@@ -664,7 +664,7 @@ function AgentStep({
 								<div className="flex items-center justify-between gap-2">
 									<div className="flex items-center gap-2">
 										<Logo mark={meta.mark} size={20} />
-										<h2 className="font-mono text-[14px] text-[var(--ret-text)]">
+										<h2 className="text-[14px] font-medium text-[var(--ret-text)]">
 											{meta.name}
 										</h2>
 									</div>
@@ -675,7 +675,7 @@ function AgentStep({
 								<p className="text-[12px] text-[var(--ret-text-dim)]">
 									{meta.tagline}
 								</p>
-								<ul className="space-y-0.5 font-mono text-[10px] text-[var(--ret-text-muted)]">
+								<ul className="space-y-0.5 text-[10px] text-[var(--ret-text-muted)]">
 									{meta.bullets.map((b) => (
 										<li key={b} className="flex items-start gap-1.5">
 											<span>.</span>
@@ -695,8 +695,8 @@ function AgentStep({
 										rel="noreferrer"
 										className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--ret-text-muted)] transition-colors hover:text-[var(--ret-purple)]"
 									>
-										{l.label} {"->"}
-									</a>
+									{l.label} →
+								</a>
 								))}
 							</div>
 						</div>
@@ -705,7 +705,7 @@ function AgentStep({
 			</div>
 			<div className="flex justify-end">
 				<ReticleButton variant="primary" size="md" onClick={onNext}>
-					Continue {"->"}
+					Continue →
 				</ReticleButton>
 			</div>
 		</div>
@@ -798,7 +798,7 @@ function SkillsStep({
 											className="mt-0.5 accent-[var(--ret-purple)]"
 										/>
 										<span className="min-w-0 flex-1">
-											<span className="font-mono text-[11px] text-[var(--ret-text)]">
+											<span className="text-[11px] text-[var(--ret-text)]">
 												{s.name}
 											</span>
 											<p className="line-clamp-2 text-[10px] text-[var(--ret-text-dim)]">
@@ -814,10 +814,10 @@ function SkillsStep({
 			</div>
 			<div className="flex items-center justify-between gap-2">
 				<ReticleButton variant="ghost" size="md" onClick={onBack}>
-					{"<- Back"}
+					← Back
 				</ReticleButton>
 				<ReticleButton variant="primary" size="md" onClick={onNext}>
-					Continue {"->"}
+					Continue →
 				</ReticleButton>
 			</div>
 		</div>
@@ -979,10 +979,10 @@ function ToolsStep({
 
 			<div className="flex items-center justify-between gap-2">
 				<ReticleButton variant="ghost" size="md" onClick={onBack}>
-					{"<- Back"}
+					← Back
 				</ReticleButton>
 				<ReticleButton variant="primary" size="md" onClick={onNext}>
-					Continue {"->"}
+					Continue →
 				</ReticleButton>
 			</div>
 		</div>
@@ -1033,9 +1033,9 @@ function ProviderPickStep({
 							)}
 						>
 							<div className="flex items-center justify-between gap-2">
-								<h2 className="font-mono text-[13px] text-[var(--ret-text)]">
-									{meta.name}
-								</h2>
+							<h2 className="text-[13px] font-medium text-[var(--ret-text)]">
+								{meta.name}
+							</h2>
 								<div className="flex items-center gap-1.5">
 									{hasCreds ? (
 										<ReticleBadge variant="success">key on file</ReticleBadge>
@@ -1057,10 +1057,10 @@ function ProviderPickStep({
 			</div>
 			<div className="flex items-center justify-between gap-2">
 				<ReticleButton variant="ghost" size="md" onClick={onBack}>
-					{"<- Back"}
+					← Back
 				</ReticleButton>
 				<ReticleButton variant="primary" size="md" onClick={onNext}>
-					Continue {"->"}
+					Continue →
 				</ReticleButton>
 			</div>
 		</div>
@@ -1117,7 +1117,7 @@ function KeyStep({
 					onChange={(e) => onChange(e.target.value)}
 					className="border border-[var(--ret-border)] bg-[var(--ret-bg)] px-3 py-2 font-mono text-[12px] text-[var(--ret-text)] placeholder:text-[var(--ret-text-muted)] focus:border-[var(--ret-purple)] focus:outline-none"
 				/>
-				<span className="font-mono text-[10px] text-[var(--ret-text-muted)]">
+				<span className="text-[10px] text-[var(--ret-text-muted)]">
 					{hasKey
 						? "On file. Leave blank to keep the existing key."
 						: ownerKey
@@ -1142,7 +1142,7 @@ function KeyStep({
 			))}
 			<div className="flex items-center justify-between gap-2">
 				<ReticleButton variant="ghost" size="md" onClick={onBack} disabled={busy}>
-					{"<- Back"}
+					← Back
 				</ReticleButton>
 				<ReticleButton
 					variant="primary"
@@ -1153,7 +1153,7 @@ function KeyStep({
 					{busy ? (
 						<BrailleSpinner name="braille" label="Saving..." className="text-sm" />
 					) : (
-						<>Boot rig {"->"}</>
+						<>Boot rig →</>
 					)}
 				</ReticleButton>
 			</div>
@@ -1180,30 +1180,33 @@ function BootStep({
 	error: string | null;
 	onRetry: () => void;
 }) {
+	const isCliAgent = agent === "claude-code" || agent === "codex";
 	const steps = [
 		{ id: "create", label: "Submit machine create", isDone: !!machineId },
 		{ id: "schedule", label: `${PROVIDER_LABEL[provider]} schedules`, isDone: phase === "running" || phase === "starting" || phase === "wake_pending" },
 		{ id: "boot", label: "VM boots", isDone: phase === "running" },
 		{ id: "record", label: "Save fleet record + selected loadout", isDone: !!machineId },
-		{ id: "agent", label: `Bootstrap ${AGENT_LABEL[agent]} gateway`, isDone: done },
+		{ id: "agent", label: `Bootstrap ${AGENT_LABEL[agent]} ${isCliAgent ? "environment" : "gateway"}`, isDone: done },
 	];
 	return (
 		<div className="space-y-5">
 			<div>
 				<ReticleLabel>step 6 . boot</ReticleLabel>
 				<h1 className="ret-display mt-1 text-2xl">
-					{done ? "Agent gateway ready" : "Creating your machine"}
+					{done ? (isCliAgent ? "Agent environment ready" : "Agent gateway ready") : "Creating your machine"}
 				</h1>
 				<p className="mt-1 max-w-[60ch] text-[13px] text-[var(--ret-text-dim)]">
 					{done
 						? "Riding into the dashboard..."
-						: `This creates a ${PROVIDER_LABEL[provider]} machine, saves your selected loadout, bootstraps ${AGENT_LABEL[agent]}, and wires the gateway back into your account.`}
+						: isCliAgent
+							? `This creates a ${PROVIDER_LABEL[provider]} machine, saves your selected loadout, and bootstraps the ${AGENT_LABEL[agent]} environment.`
+							: `This creates a ${PROVIDER_LABEL[provider]} machine, saves your selected loadout, bootstraps ${AGENT_LABEL[agent]}, and wires the gateway back into your account.`}
 				</p>
 			</div>
 
 			{error ? (
 				<ReticleFrame className="border-[var(--ret-red)]/50 bg-[var(--ret-red)]/5 p-3">
-					<p className="font-mono text-[11px] text-[var(--ret-red)]">{error}</p>
+					<p className="text-[11px] text-[var(--ret-red)]">{error}</p>
 					<div className="mt-2">
 						<ReticleButton variant="secondary" size="sm" onClick={onRetry} disabled={busy}>
 							Retry
@@ -1220,7 +1223,7 @@ function BootStep({
 						return (
 							<li
 								key={s.id}
-								className="flex items-center gap-3 px-4 py-2.5 font-mono text-[12px]"
+								className="flex items-center gap-3 px-4 py-2.5 text-[12px]"
 							>
 								<span
 									className={cn(
@@ -1262,7 +1265,7 @@ function BootStep({
 					machine id . <span className="text-[var(--ret-text)]">{machineId}</span>
 				</p>
 			) : (
-				<p className="font-mono text-[10px] text-[var(--ret-text-muted)]">
+				<p className="text-[10px] text-[var(--ret-text-muted)]">
 					<BrailleSpinner /> waiting for machine id...
 				</p>
 			)}
@@ -1389,10 +1392,10 @@ function RigPreview({
 				<div className="flex items-center gap-3 border-b border-[var(--ret-border)] px-4 py-3">
 					<Logo mark={meta.mark} size={28} />
 					<div>
-						<p className="font-mono text-[14px] text-[var(--ret-text)]">
+						<p className="text-[14px] font-medium text-[var(--ret-text)]">
 							{meta.name}
 						</p>
-						<p className="font-mono text-[10px] text-[var(--ret-text-muted)]">
+						<p className="text-[10px] text-[var(--ret-text-muted)]">
 							{meta.tagline}
 						</p>
 						<p className="font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--ret-text-muted)]">
@@ -1416,7 +1419,7 @@ function RigPreview({
 				</div>
 				<ul className="divide-y divide-[var(--ret-border)]">
 					{mcps.length === 0 ? (
-						<li className="px-4 py-3 font-mono text-[11px] text-[var(--ret-text-muted)]">
+						<li className="px-4 py-3 text-[11px] text-[var(--ret-text-muted)]">
 							no MCP servers selected
 						</li>
 					) : null}
@@ -1480,16 +1483,16 @@ function RigPreview({
 					{spotlight.map((s) => (
 						<li
 							key={s.slug}
-							className="px-4 py-1.5 font-mono text-[11px] text-[var(--ret-text)]"
-						>
-							<span className="text-[var(--ret-text-muted)]">.</span> {s.name}
-						</li>
+						className="px-4 py-1.5 text-[11px] text-[var(--ret-text)]"
+					>
+						<span className="text-[var(--ret-text-muted)]">.</span> {s.name}
+					</li>
 					))}
 				</ul>
 			</ReticleFrame>
 
 			{!bootPhase ? (
-				<p className="font-mono text-[10px] text-[var(--ret-text-muted)]">
+				<p className="text-[10px] text-[var(--ret-text-muted)]">
 					{counts.skills > 0 || counts.builtins > 0 ? null : (
 						<BrailleSpinner label="building your rig" />
 					)}

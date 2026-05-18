@@ -17,14 +17,13 @@
 
 import { Buffer } from "node:buffer";
 
-import { execOnMachine, isMachineRunning } from "@/lib/dashboard/exec";
+import { execOnMachine, isMachineRunning, resolveMachine } from "@/lib/dashboard/exec";
 import {
 	MachineProviderError,
 	getProvider,
 } from "@/lib/providers";
 import { getUserConfig } from "@/lib/user-config/clerk";
 import {
-	activeMachine,
 	type MachineRef,
 } from "@/lib/user-config/schema";
 
@@ -47,23 +46,22 @@ export type MachineHandle = {
 };
 
 /**
- * Resolve the user's active machine and ensure it's awake.
+ * Resolve a machine and ensure it's awake.
  *
- * If the machine is sleeping, we submit a wake and return
- * `machine_starting` so the caller can return a typed envelope to the
- * client. The dashboard's `useMachineControl` hook already polls every
- * 2s during transitions, so the next request will succeed.
+ * When `machineId` is provided, targets that specific machine (used
+ * by per-machine dashboard pages). When omitted, falls back to the
+ * account's active machine.
  *
  * Returns the machine handle when ready, or a typed unreachable state
  * the API route can pass straight back to the browser as the response
  * body. This pattern keeps the client's loading UI generic -- it just
  * polls until `ok: true`.
  */
-export async function withActiveMachine(): Promise<
-	MachineHandle | MachineUnreachable
-> {
+export async function withActiveMachine(
+	machineId?: string | null,
+): Promise<MachineHandle | MachineUnreachable> {
 	const config = await getUserConfig();
-	const machine = activeMachine(config);
+	const machine = resolveMachine(config, machineId);
 	if (!machine) {
 		return {
 			ok: false,
@@ -81,10 +79,8 @@ export async function withActiveMachine(): Promise<
 		};
 	}
 
-	if (await isMachineRunning()) return { machine };
+	if (await isMachineRunning(machine.id)) return { machine };
 
-	// Machine is asleep / starting / failed. Submit a wake and return
-	// the appropriate transitional state for the client to poll on.
 	try {
 		const summary = await provider.state(machine.id);
 		if (summary.state === "sleeping") {

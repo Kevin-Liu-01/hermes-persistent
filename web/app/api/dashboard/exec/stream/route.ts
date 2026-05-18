@@ -29,6 +29,7 @@ const HEARTBEAT_INTERVAL_MS = 800;
 type ExecRequestBody = {
 	command?: string;
 	timeoutMs?: number;
+	machineId?: string;
 };
 
 function sseFrame(event: string, data: unknown): string {
@@ -57,8 +58,9 @@ export async function POST(request: Request): Promise<Response> {
 	}
 
 	const timeoutMs = clampTimeout(body.timeoutMs);
+	const machineId = body.machineId ?? undefined;
 
-	if (!(await isMachineRunning())) {
+	if (!(await isMachineRunning(machineId))) {
 		return Response.json(
 			{ error: "machine_offline", message: "Machine is not awake." },
 			{ status: 503 },
@@ -79,7 +81,7 @@ export async function POST(request: Request): Promise<Response> {
 				write(sseFrame("heartbeat", { elapsedMs: Date.now() - t0 }));
 			}, HEARTBEAT_INTERVAL_MS);
 
-			execOnMachine(command, { timeoutMs })
+			execOnMachine(command, { timeoutMs, machineId })
 				.then((result) => {
 					clearInterval(heartbeat);
 					const elapsedMs = Date.now() - t0;

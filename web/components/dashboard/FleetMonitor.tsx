@@ -245,7 +245,7 @@ export function FleetMonitor() {
 			) : null}
 
 			{error ? (
-				<p className="border-b border-[var(--ret-border)] bg-[var(--ret-red)]/5 px-4 py-2 font-mono text-[11px] text-[var(--ret-red)]">
+				<p className="border-b border-[var(--ret-border)] bg-[var(--ret-red)]/5 px-4 py-2 text-[11px] text-[var(--ret-red)]">
 					! {error}
 				</p>
 			) : null}
@@ -360,9 +360,9 @@ function MachineRow({
 			<div className="flex items-center justify-between gap-2">
 				<div className="flex min-w-0 items-center gap-1.5">
 					{providerMark ? <Logo mark={providerMark} size={12} /> : null}
-					<span className="truncate font-mono text-[12px] text-[var(--ret-text)]">
-						{machine.name}
-					</span>
+				<span className="truncate text-[12px] text-[var(--ret-text)]">
+					{machine.name}
+				</span>
 					{active ? (
 						<ReticleBadge variant="accent" className="text-[9px]">
 							active
@@ -371,7 +371,7 @@ function MachineRow({
 				</div>
 				<StateChip tone={tone}>{stateName}</StateChip>
 			</div>
-			<dl className="grid grid-cols-3 gap-1 font-mono text-[10px] text-[var(--ret-text-muted)]">
+			<dl className="grid grid-cols-3 gap-1 text-[10px] text-[var(--ret-text-muted)]">
 				<Cell label="agent">
 					<span className="flex items-center gap-1 text-[var(--ret-text)]">
 						<Logo mark={AGENT_MARK[machine.agentKind]} size={9} />
@@ -394,13 +394,13 @@ function MachineRow({
 				{machine.id}
 			</p>
 			{!machine.live.ok ? (
-				<p className="bg-[var(--ret-amber)]/5 px-2 py-1 font-mono text-[10px] text-[var(--ret-amber)]">
-					probe failed: {machine.live.reason.slice(0, 80)}
+			<p className="bg-[var(--ret-amber)]/5 px-2 py-1 text-[10px] text-[var(--ret-amber)]">
+				probe failed: {machine.live.reason.slice(0, 80)}
 				</p>
 			) : providerMessage ? (
 				<p
 					className={cn(
-						"px-2 py-1 font-mono text-[10px]",
+						"px-2 py-1 text-[10px]",
 						isActualError
 							? "bg-[var(--ret-red)]/5 text-[var(--ret-red)]"
 							: "bg-[var(--ret-amber)]/5 text-[var(--ret-amber)]",
@@ -418,6 +418,7 @@ function MachineRow({
 					capabilities={machine.capabilities}
 					active={active}
 					archived={machine.archived ?? false}
+					allowDestroy
 					onChange={onChange}
 				/>
 			</div>

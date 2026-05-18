@@ -1,12 +1,16 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 
 import { LiveDataView } from "@/components/dashboard/LiveDataView";
 import { Logo } from "@/components/Logo";
+import { useOptionalMachineContext } from "@/components/dashboard/MachineProvider";
 import { cn } from "@/lib/cn";
 import { formatAge, formatDuration } from "@/lib/dashboard/format";
 import type { CursorRun, CursorRunsPayload } from "@/lib/dashboard/types";
+
+const MACHINE_PATH_RE = /^\/dashboard\/machines\/([^/]+)/;
 
 const STATUS_COLOR: Record<string, string> = {
 	completed: "text-[var(--ret-green)]",
@@ -18,9 +22,20 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 export function CursorRunsList() {
+	const pathname = usePathname();
+	const machineCtx = useOptionalMachineContext();
+	const machineMatch = MACHINE_PATH_RE.exec(pathname);
+	const machineId = machineCtx?.machineId ?? machineMatch?.[1];
+	const chatHref = machineId
+		? `/dashboard/machines/${machineId}/chat`
+		: "/dashboard/chat";
+	const endpoint = machineId
+		? `/api/dashboard/cursor?machineId=${encodeURIComponent(machineId)}`
+		: "/api/dashboard/cursor";
+
 	return (
 		<LiveDataView<CursorRunsPayload>
-			endpoint="/api/dashboard/cursor"
+			endpoint={endpoint}
 			pollMs={30_000}
 			offlineHint={"# the dashboard reads:\ncat ~/.agent-machines/cursor-runs.jsonl"}
 			render={(data, fetchedAt) => (
@@ -41,12 +56,12 @@ export function CursorRunsList() {
 
 					{data.runs.length === 0 ? (
 						<div className="border border-dashed border-[var(--ret-border)] bg-[var(--ret-bg)] px-6 py-12 text-center text-sm text-[var(--ret-text-dim)]">
-							No Cursor agents have been spawned yet. Hand the agent some
-							code work in{" "}
-							<a href="/dashboard/chat" className="underline">
-								chat
-							</a>{" "}
-							-- it'll log every run here.
+						No Cursor agents have been spawned yet. Hand the agent some
+						code work in{" "}
+						<a href={chatHref} className="underline">
+							chat
+						</a>{" "}
+						-- it'll log every run here.
 						</div>
 					) : (
 						<div className="flex flex-col gap-3">

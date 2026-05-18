@@ -86,9 +86,17 @@ export function ChatShell({ activeMachineId, model }: Props) {
 
 	const refreshList = useCallback(async (): Promise<ChatsListResponse | null> => {
 		try {
-			const response = await fetch("/api/dashboard/chats", {
+			const params = activeMachineId
+				? `?machineId=${encodeURIComponent(activeMachineId)}`
+				: "";
+			const response = await fetch(`/api/dashboard/chats${params}`, {
 				cache: "no-store",
 			});
+			if (!response.ok) {
+				setChats([]);
+				setMachineState({ ok: false, reason: "fetch_error", message: `HTTP ${response.status}` });
+				return null;
+			}
 			const body = (await response.json()) as ChatsListResponse;
 			if (body.ok) {
 				setChats(body.chats);
@@ -271,9 +279,9 @@ export function ChatShell({ activeMachineId, model }: Props) {
 				/>
 				{loadError ? (
 					<ReticleFrame className="mb-3 border-[var(--ret-red)]/40 bg-[var(--ret-red)]/5 p-3">
-						<p className="font-mono text-[10px] text-[var(--ret-red)]">
-							{loadError}
-						</p>
+					<p className="text-[10px] text-[var(--ret-red)]">
+						{loadError}
+					</p>
 					</ReticleFrame>
 				) : null}
 				<ul className="flex flex-col gap-px bg-[var(--ret-border)]">
@@ -293,9 +301,9 @@ export function ChatShell({ activeMachineId, model }: Props) {
 						</li>
 					) : null}
 					{machineState.ok && chats.length === 0 ? (
-						<li className="bg-[var(--ret-bg)] p-3 font-mono text-[11px] text-[var(--ret-text-muted)]">
-							no past chats
-						</li>
+					<li className="bg-[var(--ret-bg)] p-3 text-[11px] text-[var(--ret-text-muted)]">
+						no past chats
+					</li>
 					) : null}
 					{chats.map((chat) => {
 						const active = chat.id === activeChatId;
@@ -314,16 +322,16 @@ export function ChatShell({ activeMachineId, model }: Props) {
 									onClick={() => void loadChat(chat.id)}
 									className="text-left"
 								>
-									<p
-										className={cn(
-											"truncate font-mono text-[12px]",
-											active
-												? "text-[var(--ret-purple)]"
-												: "text-[var(--ret-text)]",
-										)}
-									>
-										{chat.title}
-									</p>
+								<p
+									className={cn(
+										"truncate text-[12px]",
+										active
+											? "text-[var(--ret-purple)]"
+											: "text-[var(--ret-text)]",
+									)}
+								>
+									{chat.title}
+								</p>
 									<p className="font-mono text-[10px] text-[var(--ret-text-muted)]">
 										{chat.messageCount} msg . {timeAgo(chat.updatedAt)}
 									</p>
@@ -423,12 +431,12 @@ function BootstrapAgentPanel({
 						If chat is offline, bootstrap the installed Hermes/OpenClaw gateway
 						and save its URL/key back to this machine record.
 					</p>
-					{state.phase === "error" ? (
-						<p className="mt-1 font-mono text-[10px] text-[var(--ret-red)]">
-							{state.message}
-						</p>
-					) : null}
-					{state.phase === "ok" ? (
+				{state.phase === "error" ? (
+					<p className="mt-1 text-[10px] text-[var(--ret-red)]">
+						{state.message}
+					</p>
+				) : null}
+				{state.phase === "ok" ? (
 						<p className="mt-1 font-mono text-[10px] text-[var(--ret-green)]">
 							{state.message}
 						</p>
@@ -470,14 +478,14 @@ function MachineStateBanner({
 			<ReticleFrame className="mb-3 border-[var(--ret-amber)]/40 bg-[var(--ret-amber)]/5 p-3">
 				<div className="flex flex-wrap items-center justify-between gap-2">
 					<div>
-						<p className="font-mono text-[10px] text-[var(--ret-amber)]">
-							{phase === "sleeping"
-								? "Machine is asleep. Wake it to load /home/machine."
-								: "Waking your machine... chats are stored on its disk."}
-						</p>
-						<p className="mt-1 font-mono text-[10px] text-[var(--ret-text-muted)]">
-							{state.message ?? "First open after sleep takes ~30 seconds."}
-						</p>
+					<p className="text-[10px] text-[var(--ret-amber)]">
+						{phase === "sleeping"
+							? "Machine is asleep. Wake it to load /home/machine."
+							: "Waking your machine... chats are stored on its disk."}
+					</p>
+					<p className="mt-1 text-[10px] text-[var(--ret-text-muted)]">
+						{state.message ?? "First open after sleep takes ~30 seconds."}
+					</p>
 					</div>
 					{machineId ? (
 						<MachineActions
@@ -495,24 +503,24 @@ function MachineStateBanner({
 	if (state.reason === "no_active_machine") {
 		return (
 			<ReticleFrame className="mb-3 border-[var(--ret-amber)]/40 bg-[var(--ret-amber)]/5 p-3">
-				<p className="font-mono text-[10px] text-[var(--ret-amber)]">
-					No active machine.
-				</p>
-				<a
-					href="/dashboard/setup"
-					className="mt-1 inline-block font-mono text-[10px] text-[var(--ret-purple)] underline"
-				>
-					{"Provision one ->"}
-				</a>
-			</ReticleFrame>
+			<p className="text-[10px] text-[var(--ret-amber)]">
+				No active machine.
+			</p>
+			<a
+				href="/dashboard/setup"
+				className="mt-1 inline-block text-[10px] text-[var(--ret-purple)] underline"
+			>
+				Provision one →
+			</a>
+		</ReticleFrame>
 		);
 	}
 	return (
 		<ReticleFrame className="mb-3 border-[var(--ret-red)]/40 bg-[var(--ret-red)]/5 p-3">
-			<p className="font-mono text-[10px] text-[var(--ret-red)]">
-				{state.message ?? "Storage unavailable."}
-			</p>
-		</ReticleFrame>
+		<p className="text-[10px] text-[var(--ret-red)]">
+			{state.message ?? "Storage unavailable."}
+		</p>
+	</ReticleFrame>
 	);
 }
 

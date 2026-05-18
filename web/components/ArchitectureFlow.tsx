@@ -1075,7 +1075,7 @@ export function ArchitectureFlow() {
 											key={bullet}
 											className="flex items-baseline gap-1.5 text-[var(--ret-text-dim)]"
 										>
-											<span className="text-[var(--ret-purple)]">{"->"}</span>
+											<span className="text-[var(--ret-purple)]">→</span>
 											<span>{bullet}</span>
 										</li>
 									))}

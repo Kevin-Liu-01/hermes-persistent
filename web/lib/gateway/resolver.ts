@@ -7,8 +7,9 @@
  * agents without hand-editing `apiUrl` on every MachineRef.
  */
 
+import { resolveMachine } from "@/lib/dashboard/exec";
 import { getUserConfig } from "@/lib/user-config/clerk";
-import { activeMachine, type GatewayProfile } from "@/lib/user-config/schema";
+import { type GatewayProfile } from "@/lib/user-config/schema";
 
 export type GatewayEnv = {
 	apiUrl: string;
@@ -18,12 +19,14 @@ export type GatewayEnv = {
 	apiHost: string;
 };
 
-export async function resolveGatewayForUser(): Promise<GatewayEnv> {
+export async function resolveGatewayForUser(machineId?: string | null): Promise<GatewayEnv> {
 	const config = await getUserConfig();
-	const machine = activeMachine(config);
+	const machine = resolveMachine(config, machineId);
 	if (!machine) {
 		throw new Error(
-			"No machine selected. Pick one in /dashboard/machines or provision via /dashboard/setup.",
+			machineId
+				? `Machine ${machineId} not found in your account.`
+				: "No machine selected. Pick one in /dashboard/machines or provision via /dashboard/setup.",
 		);
 	}
 
@@ -46,12 +49,14 @@ export async function resolveGatewayForUser(): Promise<GatewayEnv> {
 	};
 }
 
-export async function resolveModelGatewayForUser(): Promise<GatewayEnv> {
+export async function resolveModelGatewayForUser(machineId?: string | null): Promise<GatewayEnv> {
 	const config = await getUserConfig();
-	const machine = activeMachine(config);
+	const machine = resolveMachine(config, machineId);
 	if (!machine) {
 		throw new Error(
-			"No machine selected. Pick one in /dashboard/machines or provision via /dashboard/setup.",
+			machineId
+				? `Machine ${machineId} not found in your account.`
+				: "No machine selected. Pick one in /dashboard/machines or provision via /dashboard/setup.",
 		);
 	}
 	const profile =

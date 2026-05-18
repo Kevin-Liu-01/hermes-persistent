@@ -23,10 +23,11 @@ export const dynamic = "force-dynamic";
 
 const MAX_BYTES = 8 * 1024 * 1024;
 
-export async function GET(): Promise<Response> {
+export async function GET(request: Request): Promise<Response> {
 	const userId = await getEffectiveUserId();
 	if (!userId) return Response.json({ error: "unauthorized" }, { status: 401 });
-	const handle = await withActiveMachine();
+	const machineId = new URL(request.url).searchParams.get("machineId") ?? undefined;
+	const handle = await withActiveMachine(machineId);
 	if ("ok" in handle) {
 		return Response.json({ ...handle, artifacts: [] });
 	}
@@ -49,16 +50,17 @@ export async function GET(): Promise<Response> {
 export async function POST(request: Request): Promise<Response> {
 	const userId = await getEffectiveUserId();
 	if (!userId) return Response.json({ error: "unauthorized" }, { status: 401 });
-	const handle = await withActiveMachine();
-	if ("ok" in handle) {
-		return Response.json(handle, { status: 503 });
-	}
 
 	let form: FormData;
 	try {
 		form = await request.formData();
 	} catch {
 		return Response.json({ error: "invalid_form" }, { status: 400 });
+	}
+	const machineId = form.get("machineId");
+	const handle = await withActiveMachine(typeof machineId === "string" ? machineId : undefined);
+	if ("ok" in handle) {
+		return Response.json(handle, { status: 503 });
 	}
 	const file = form.get("file");
 	const chatId = form.get("chatId");

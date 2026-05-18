@@ -12,7 +12,7 @@ export default async function SettingsPage() {
 			<PageHeader
 				kicker="SETTINGS"
 				title="Account configuration"
-				description="Update reusable provider, gateway, agent, environment, bootstrap, and custom loadout settings that new persistent Hermes and OpenClaw machines inherit. Terminal edits can sync back through /home/machine/.agent-machines/settings.json."
+				description="Update reusable provider, gateway, agent, environment, bootstrap, and custom loadout settings that new machines inherit. Terminal edits can sync back through /home/machine/.agent-machines/settings.json."
 			/>
 			<SettingsPanel initialConfig={toPublicConfig(config)} />
 		</div>

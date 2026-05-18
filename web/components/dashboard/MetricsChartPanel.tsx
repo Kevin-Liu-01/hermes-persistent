@@ -74,6 +74,8 @@ const LEVEL_COLORS = {
 const AGENT_COLORS: Record<string, string> = {
 	hermes: "var(--ret-purple)",
 	openclaw: "var(--ret-amber)",
+	"claude-code": "var(--ret-green)",
+	codex: "var(--ret-text-dim)",
 };
 
 type Props = {
@@ -196,13 +198,13 @@ function ChartCell({
 				<p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--ret-text-muted)]">
 					{title}
 				</p>
-				{hint ? (
-					<p className="font-mono text-[10px] text-[var(--ret-text-muted)]">
-						{hint}
-					</p>
-				) : null}
+			{hint ? (
+				<p className="text-[10px] text-[var(--ret-text-muted)]">
+					{hint}
+				</p>
+			) : null}
 			</div>
-			<div className="h-[160px] w-full">{children}</div>
+			<div className="h-[160px] min-h-[1px] min-w-[1px] w-full">{children}</div>
 			{footer ? <div className="flex flex-wrap gap-3">{footer}</div> : null}
 		</div>
 	);
@@ -376,9 +378,9 @@ function AgentBreakdownChart({ slices }: { slices: PieSlice[] }) {
 	if (total === 0) {
 		return (
 			<ChartCell title="logs by agent" hint="no data">
-				<div className="flex h-full items-center justify-center font-mono text-[11px] text-[var(--ret-text-muted)]">
-					waiting for log lines
-				</div>
+			<div className="flex h-full items-center justify-center text-[11px] text-[var(--ret-text-muted)]">
+				waiting for log lines
+			</div>
 			</ChartCell>
 		);
 	}
@@ -446,7 +448,7 @@ function Stat({ label, value }: { label: string; value: string }) {
 
 function LegendChip({ color, label }: { color: string; label: string }) {
 	return (
-		<span className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--ret-text-muted)]">
+		<span className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] text-[var(--ret-text-muted)]">
 			<span
 				aria-hidden="true"
 				className="inline-block h-2 w-2"
@@ -519,18 +521,12 @@ function parseTimestamp(at: string | null): number | null {
 type PieSlice = { name: string; value: number; color: string };
 
 function agentBreakdown(lines: LogLine[]): PieSlice[] {
+	const KNOWN_AGENTS = new Set(["hermes", "openclaw", "claude-code", "codex"]);
 	const counts = new Map<string, number>();
 	for (const line of lines) {
-		// Source from the API is either "hermes" or "openclaw" once
-		// we tail both runtimes; older payloads might say
-		// "gateway.log" so we fall back to "hermes" which was the
-		// only source pre-multi-agent.
-		const source =
-			line.source === "openclaw"
-				? "openclaw"
-				: line.source === "hermes"
-					? "hermes"
-					: "hermes";
+		const source = KNOWN_AGENTS.has(line.source ?? "")
+			? (line.source as string)
+			: "hermes";
 		counts.set(source, (counts.get(source) ?? 0) + 1);
 	}
 	return Array.from(counts.entries()).map(([name, value]) => ({

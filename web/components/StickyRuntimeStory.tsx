@@ -66,8 +66,8 @@ export function StickyRuntimeStory() {
 					<p className="mt-4 max-w-[50ch] text-[13px] leading-relaxed text-[var(--ret-text-dim)]">
 						This section behaves like a locked product diagram: the copy stays
 						stable while each workflow panel slides into place as you scroll.
-						No fake dashboard screenshots, just the actual account {"->"} provider
-						{"->"} agent {"->"} storage {"->"} registry model.
+						No fake dashboard screenshots, just the actual account → provider
+						→ agent → storage → registry model.
 					</p>
 					<ReticleFrame className="mt-6" corners={false}>
 						<div className="grid gap-px bg-[var(--ret-border)]">

@@ -84,6 +84,7 @@ function markEnd(userId: string): void {
 type ExecRequestBody = {
 	command?: string;
 	timeoutMs?: number;
+	machineId?: string;
 };
 
 export async function POST(request: Request): Promise<Response> {
@@ -131,7 +132,9 @@ export async function POST(request: Request): Promise<Response> {
 		);
 	}
 
-	if (!(await isMachineRunning())) {
+	const machineId = body.machineId ?? undefined;
+
+	if (!(await isMachineRunning(machineId))) {
 		return Response.json(
 			{
 				error: "machine_offline",
@@ -145,7 +148,7 @@ export async function POST(request: Request): Promise<Response> {
 	const startedAt = new Date().toISOString();
 	const t0 = Date.now();
 	try {
-		const result = await execOnMachine(command, { timeoutMs });
+		const result = await execOnMachine(command, { timeoutMs, machineId });
 		const elapsedMs = Date.now() - t0;
 		const finishedAt = new Date().toISOString();
 		return Response.json(

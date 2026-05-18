@@ -344,7 +344,7 @@ export function ContributionGrid() {
 					</button>
 				) : (
 					<p className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] text-[var(--ret-text-muted)]">
-						<span aria-hidden="true" className="text-[var(--ret-purple)]">{"->"}
+						<span aria-hidden="true" className="text-[var(--ret-purple)]">→
 						</span>
 						tap a cell . click a chip to filter
 					</p>
@@ -400,7 +400,7 @@ export function ContributionGrid() {
 					<div className="border-b border-[var(--ret-border)] px-3 py-2.5">
 						<div className="flex items-baseline justify-between gap-2">
 							<p className="flex items-center gap-1 text-[9px] uppercase tracking-[0.22em] text-[var(--ret-text-muted)]">
-								<span aria-hidden="true" className="text-[var(--ret-purple)]">{"->"}
+								<span aria-hidden="true" className="text-[var(--ret-purple)]">→
 								</span>
 								filter by agent . {ALL_PARTNERS.length}
 							</p>
@@ -435,7 +435,7 @@ export function ContributionGrid() {
 						<div className="px-3 py-2.5">
 							<div className="flex items-baseline justify-between gap-2">
 								<p className="flex items-center gap-1 text-[9px] uppercase tracking-[0.22em] text-[var(--ret-text-muted)]">
-									<span aria-hidden="true" className="text-[var(--ret-purple)]">{"->"}
+									<span aria-hidden="true" className="text-[var(--ret-purple)]">→
 									</span>
 									filter by service . {brandStats.slugs.length}
 								</p>
@@ -515,7 +515,7 @@ function DayDetail({ day }: { day: ContributionDay }) {
 				</ul>
 			)}
 			<p className="mt-auto pt-3 text-[10px] leading-relaxed text-[var(--ret-text-muted)]">
-				<span className="text-[var(--ret-purple)]">{"->"}</span> each cell is
+				<span className="text-[var(--ret-purple)]">→</span> each cell is
 				one day this machine was awake. hover to peek, click to pin. nothing
 				lives in RAM that it can&rsquo;t rebuild from{" "}
 				<code className="font-mono text-[var(--ret-text-dim)]">/home/machine</code>.

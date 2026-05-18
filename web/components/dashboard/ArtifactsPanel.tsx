@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { useOptionalMachineContext } from "@/components/dashboard/MachineProvider";
 import { ReticleButton } from "@/components/reticle/ReticleButton";
 import { ReticleFrame } from "@/components/reticle/ReticleFrame";
 import { ReticleHatch } from "@/components/reticle/ReticleHatch";
@@ -65,6 +66,8 @@ function downloadUrl(id: string): string {
 }
 
 export function ArtifactsPanel() {
+	const machineCtx = useOptionalMachineContext();
+	const machineId = machineCtx?.machineId;
 	const [artifacts, setArtifacts] = useState<ArtifactRef[]>([]);
 	const [machineState, setMachineState] = useState<{
 		ok: boolean;
@@ -77,7 +80,8 @@ export function ArtifactsPanel() {
 
 	const refresh = useCallback(async () => {
 		try {
-			const response = await fetch("/api/dashboard/artifacts", {
+			const params = machineId ? `?machineId=${encodeURIComponent(machineId)}` : "";
+			const response = await fetch(`/api/dashboard/artifacts${params}`, {
 				cache: "no-store",
 			});
 			const body = (await response.json()) as ListResponse;
@@ -120,9 +124,10 @@ export function ArtifactsPanel() {
 			setUploading(true);
 			setError(null);
 			try {
-				const form = new FormData();
-				form.append("file", file);
-				const response = await fetch("/api/dashboard/artifacts", {
+			const form = new FormData();
+			form.append("file", file);
+			if (machineId) form.append("machineId", machineId);
+			const response = await fetch("/api/dashboard/artifacts", {
 					method: "POST",
 					body: form,
 				});
@@ -180,11 +185,11 @@ export function ArtifactsPanel() {
 	return (
 		<div className="space-y-6 px-5 py-5">
 			{error ? (
-				<ReticleFrame className="border-[var(--ret-red)]/40 bg-[var(--ret-red)]/5 p-3">
-					<p className="font-mono text-[11px] text-[var(--ret-red)]">
-						{error}
-					</p>
-				</ReticleFrame>
+			<ReticleFrame className="border-[var(--ret-red)]/40 bg-[var(--ret-red)]/5 p-3">
+				<p className="text-[11px] text-[var(--ret-red)]">
+					{error}
+				</p>
+			</ReticleFrame>
 			) : null}
 
 			<MachineStateBanner state={machineState} />
@@ -262,37 +267,37 @@ function MachineStateBanner({
 	if (state.ok) return null;
 	if (state.reason === "machine_starting" || state.reason === "machine_asleep") {
 		return (
-			<ReticleFrame className="border-[var(--ret-amber)]/40 bg-[var(--ret-amber)]/5 p-3">
-				<p className="font-mono text-[11px] text-[var(--ret-amber)]">
-					Waking your machine... artifacts live on its disk.
-				</p>
-				<p className="mt-1 font-mono text-[10px] text-[var(--ret-text-muted)]">
-					{state.message ?? "First open after sleep takes ~30 seconds."}
-				</p>
-			</ReticleFrame>
+		<ReticleFrame className="border-[var(--ret-amber)]/40 bg-[var(--ret-amber)]/5 p-3">
+			<p className="text-[11px] text-[var(--ret-amber)]">
+				Waking your machine... artifacts live on its disk.
+			</p>
+			<p className="mt-1 text-[10px] text-[var(--ret-text-muted)]">
+				{state.message ?? "First open after sleep takes ~30 seconds."}
+			</p>
+		</ReticleFrame>
 		);
 	}
 	if (state.reason === "no_active_machine") {
 		return (
-			<ReticleFrame className="border-[var(--ret-amber)]/40 bg-[var(--ret-amber)]/5 p-4">
-				<p className="font-mono text-[11px] text-[var(--ret-amber)]">
-					No active machine.
-				</p>
-				<a
-					href="/dashboard/setup"
-					className="mt-1 inline-block font-mono text-[10px] text-[var(--ret-purple)] underline"
-				>
-					{"Provision one ->"}
-				</a>
-			</ReticleFrame>
+		<ReticleFrame className="border-[var(--ret-amber)]/40 bg-[var(--ret-amber)]/5 p-4">
+			<p className="text-[11px] text-[var(--ret-amber)]">
+				No active machine.
+			</p>
+			<a
+				href="/dashboard/setup"
+				className="mt-1 inline-block text-[10px] text-[var(--ret-purple)] underline"
+			>
+				Provision one →
+			</a>
+		</ReticleFrame>
 		);
 	}
 	return (
-		<ReticleFrame className="border-[var(--ret-red)]/40 bg-[var(--ret-red)]/5 p-3">
-			<p className="font-mono text-[11px] text-[var(--ret-red)]">
-				{state.message ?? "Storage unavailable."}
-			</p>
-		</ReticleFrame>
+	<ReticleFrame className="border-[var(--ret-red)]/40 bg-[var(--ret-red)]/5 p-3">
+		<p className="text-[11px] text-[var(--ret-red)]">
+			{state.message ?? "Storage unavailable."}
+		</p>
+	</ReticleFrame>
 	);
 }
 
@@ -328,13 +333,13 @@ function UploadZone({
 						: "border-[var(--ret-border)] bg-[var(--ret-bg)] hover:bg-[var(--ret-surface)]",
 			)}
 		>
-			<p className="font-mono text-[12px] text-[var(--ret-text)]">
-				{uploading ? (
-					<BrailleSpinner name="cascade" label="uploading" className="text-[12px]" />
-				) : (
-					"drop a file here"
-				)}
-			</p>
+		<p className="text-[12px] text-[var(--ret-text)]">
+			{uploading ? (
+				<BrailleSpinner name="cascade" label="uploading" className="text-[12px]" />
+			) : (
+				"drop a file here"
+			)}
+		</p>
 			<p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--ret-text-muted)]">
 				or
 			</p>
@@ -346,10 +351,10 @@ function UploadZone({
 			>
 				Pick a file
 			</ReticleButton>
-			<p className="font-mono text-[10px] text-[var(--ret-text-muted)]">
-				Max 8 MiB. Stored on your active machine's disk under
-				~/.agent-machines/artifacts/
-			</p>
+		<p className="text-[10px] text-[var(--ret-text-muted)]">
+			Max 8 MiB. Stored on your active machine's disk under
+			~/.agent-machines/artifacts/
+		</p>
 		</div>
 	);
 }

@@ -17,7 +17,6 @@ import type {
 	SessionRecord,
 	SessionsPayload,
 } from "@/lib/dashboard/types";
-import { getUserConfig } from "@/lib/user-config/clerk";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -57,25 +56,15 @@ function toSummary(row: RawSession): SessionRecord {
 	};
 }
 
-export async function GET(): Promise<Response> {
+export async function GET(request: Request): Promise<Response> {
 	const userId = await getEffectiveUserId();
 	if (!userId) {
 		return Response.json({ error: "unauthorized" }, { status: 401 });
 	}
 
-	const config = await getUserConfig();
-	const active = config.machines.find((m) => m.id === config.activeMachineId);
-	if (!active || !config.providers.dedalus?.apiKey) {
-		const envelope: LiveDataEnvelope<SessionsPayload> = {
-			ok: false,
-			reason: "config_missing",
-			message:
-				"No machine configured. Complete /dashboard/setup to provision.",
-		};
-		return Response.json(envelope);
-	}
+	const machineId = new URL(request.url).searchParams.get("machineId") ?? undefined;
 
-	if (!(await isMachineRunning())) {
+	if (!(await isMachineRunning(machineId))) {
 		const envelope: LiveDataEnvelope<SessionsPayload> = {
 			ok: false,
 			reason: "machine_offline",
@@ -86,7 +75,7 @@ export async function GET(): Promise<Response> {
 
 	try {
 		const command = `find $HOME/.agent-machines/sessions -maxdepth 2 -type f -name '*.db' -printf '%p\\t%s\\t%T@\\n' 2>/dev/null | sort -t$'\\t' -k3,3nr | head -n ${LIST_LIMIT}`;
-		const { stdout } = await execOnMachine(command);
+		const { stdout } = await execOnMachine(command, { machineId });
 		const rows = parseRows(stdout);
 		const sessions = rows.map(toSummary);
 		const totalBytes = rows.reduce((acc, r) => acc + r.size, 0);

@@ -63,15 +63,24 @@ export function AgentConsole({ activeMachineId, model, agentKind }: AgentConsole
 	turnsRef.current = turns;
 
 	useEffect(() => {
-		fetch("/api/dashboard/gateway")
-			.then((r) => r.json())
-			.then((info: HealthInfo) => setHealth(info))
+		const params = activeMachineId
+			? `?machineId=${encodeURIComponent(activeMachineId)}`
+			: "";
+		fetch(`/api/dashboard/gateway${params}`)
+			.then((r) => {
+				if (!r.ok) return { ok: false, error: `HTTP ${r.status}` } as HealthInfo;
+				return r.json() as Promise<HealthInfo>;
+			})
+			.then((info) => setHealth(info))
 			.catch(() => setHealth({ ok: false, error: "unreachable" }));
-	}, []);
+	}, [activeMachineId]);
 
 	const refreshList = useCallback(async () => {
 		try {
-			const response = await fetch("/api/dashboard/chats", { cache: "no-store" });
+			const params = activeMachineId
+				? `?machineId=${encodeURIComponent(activeMachineId)}`
+				: "";
+			const response = await fetch(`/api/dashboard/chats${params}`, { cache: "no-store" });
 			const body = await response.json();
 			if (body.ok) {
 				const summaries: ConversationSummary[] = (body.chats ?? []).map(

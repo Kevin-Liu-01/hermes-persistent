@@ -686,7 +686,7 @@ function TransitionsLog({ transitions }: { transitions: Transition[] }) {
 							</span>
 							<span className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em]">
 								<PhaseChip phase={t.from} />
-								<span className="text-[var(--ret-text-muted)]">{"->"}</span>
+								<span className="text-[var(--ret-text-muted)]">→</span>
 								<PhaseChip phase={t.to} />
 							</span>
 						</li>

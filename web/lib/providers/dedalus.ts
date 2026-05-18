@@ -198,7 +198,23 @@ export class DedalusProvider implements MachineProvider {
 				`dedalus ${response.status}: ${(await response.text()).slice(0, 200)}`,
 			);
 		}
-		return (await response.json()) as RawMachine;
+		const text = await response.text();
+		if (!text) {
+			throw new MachineProviderError(
+				"dedalus",
+				"transient",
+				`dedalus ${response.status}: empty response body for machine ${machineId}`,
+			);
+		}
+		try {
+			return JSON.parse(text) as RawMachine;
+		} catch {
+			throw new MachineProviderError(
+				"dedalus",
+				"transient",
+				`dedalus ${response.status}: malformed JSON: ${text.slice(0, 200)}`,
+			);
+		}
 	}
 
 	async provision(input: ProvisionInput): Promise<ProvisionResult> {

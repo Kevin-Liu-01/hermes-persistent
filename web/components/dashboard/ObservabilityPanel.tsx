@@ -234,12 +234,12 @@ function IdentityCell({
 						<Logo mark={mark} size={14} />
 						{label}
 					</p>
-					<p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--ret-text-muted)]">
-						{source}
-					</p>
-					<p className="mt-1 font-mono text-[11px] text-[var(--ret-text-dim)]">
-						{spec}
-					</p>
+				<p className="text-[10px] uppercase tracking-[0.18em] text-[var(--ret-text-muted)]">
+					{source}
+				</p>
+				<p className="mt-1 text-[11px] text-[var(--ret-text-dim)]">
+					{spec}
+				</p>
 					<p className="truncate font-mono text-[11px] text-[var(--ret-text-dim)]">
 						{modelLabel}
 					</p>
@@ -345,28 +345,28 @@ function ActivityCell({
 	return (
 		<CellShell kicker="ACTIVITY" footnote={`${sorted.length} recent`}>
 			{sorted.length === 0 ? (
-				<p className="font-mono text-[11px] text-[var(--ret-text-dim)]">
-					no activity yet -- send a message in chat to populate.
-				</p>
+			<p className="text-[11px] text-[var(--ret-text-dim)]">
+				no activity yet -- send a message in chat to populate.
+			</p>
 			) : (
 				<ul className="flex flex-col gap-1.5">
 					{sorted.map((item, idx) => (
-						<li
-							key={`${item.when}-${idx}`}
-							className="flex items-baseline gap-2 font-mono text-[11px]"
-						>
-							<span className="w-3 shrink-0">
-								<span
-									className={cn(
-										"inline-block h-1.5 w-1.5",
-										item.tone === "error" && "bg-[var(--ret-red)]",
-										item.tone === "warn" && "bg-[var(--ret-amber)]",
-										item.tone === "ok" && "bg-[var(--ret-green)]",
-										item.tone === "info" && "bg-[var(--ret-text-muted)]",
-									)}
-								/>
-							</span>
-							<span className="w-14 shrink-0 text-[10px] text-[var(--ret-text-muted)]">
+					<li
+						key={`${item.when}-${idx}`}
+						className="flex items-baseline gap-2 text-[11px]"
+					>
+						<span className="w-3 shrink-0">
+							<span
+								className={cn(
+									"inline-block h-1.5 w-1.5",
+									item.tone === "error" && "bg-[var(--ret-red)]",
+									item.tone === "warn" && "bg-[var(--ret-amber)]",
+									item.tone === "ok" && "bg-[var(--ret-green)]",
+									item.tone === "info" && "bg-[var(--ret-text-muted)]",
+								)}
+							/>
+						</span>
+						<span className="w-14 shrink-0 font-mono text-[10px] text-[var(--ret-text-muted)]">
 								{item.when ? formatAge(item.when) : "--"}
 							</span>
 							<span className="min-w-0 flex-1 truncate text-[var(--ret-text-dim)]">
@@ -468,11 +468,11 @@ function MiniStat({
 			<p className="mt-1 font-mono text-base tabular-nums leading-none text-[var(--ret-text)]">
 				{value}
 			</p>
-			{hint ? (
-				<p className="mt-1 font-mono text-[10px] text-[var(--ret-text-muted)]">
-					{hint}
-				</p>
-			) : null}
+		{hint ? (
+			<p className="mt-1 text-[10px] text-[var(--ret-text-muted)]">
+				{hint}
+			</p>
+		) : null}
 		</div>
 	);
 }

@@ -1,13 +1,28 @@
 "use client";
 
+import { usePathname } from "next/navigation";
+
 import { LiveDataView } from "@/components/dashboard/LiveDataView";
+import { useOptionalMachineContext } from "@/components/dashboard/MachineProvider";
 import { formatAge, formatBytes } from "@/lib/dashboard/format";
 import type { SessionsPayload } from "@/lib/dashboard/types";
 
+const MACHINE_PATH_RE = /^\/dashboard\/machines\/([^/]+)/;
+
 export function SessionsList() {
+	const pathname = usePathname();
+	const machineCtx = useOptionalMachineContext();
+	const machineMatch = MACHINE_PATH_RE.exec(pathname);
+	const machineId = machineCtx?.machineId ?? machineMatch?.[1];
+	const chatHref = machineId
+		? `/dashboard/machines/${machineId}/chat`
+		: "/dashboard/chat";
+	const endpoint = machineId
+		? `/api/dashboard/sessions?machineId=${encodeURIComponent(machineId)}`
+		: "/api/dashboard/sessions";
 	return (
 		<LiveDataView<SessionsPayload>
-			endpoint="/api/dashboard/sessions"
+			endpoint={endpoint}
 			pollMs={30_000}
 			offlineHint={"# the dashboard reads:\nfind ~/.agent-machines/sessions -name '*.db'"}
 			render={(data, fetchedAt) => (
@@ -32,11 +47,11 @@ export function SessionsList() {
 
 					{data.sessions.length === 0 ? (
 						<div className="border border-dashed border-[var(--ret-border)] bg-[var(--ret-bg)] px-6 py-8 text-center text-sm text-[var(--ret-text-dim)]">
-							No sessions on this machine yet. Open{" "}
-							<a href="/dashboard/chat" className="underline">
-								chat
-							</a>{" "}
-							and say hi.
+					No sessions on this machine yet. Open{" "}
+						<a href={chatHref} className="underline">
+							chat
+						</a>{" "}
+						and say hi.
 						</div>
 					) : (
 						<div className="overflow-hidden border border-[var(--ret-border)]">

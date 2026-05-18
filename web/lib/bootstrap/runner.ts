@@ -173,6 +173,7 @@ function commandFor(
 			return [
 				"set -e",
 				`mkdir -p ${APP_HOME}/chats ${APP_HOME}/artifacts ${HERMES_HOME}/logs ${OPENCLAW_HOME}/logs ${MACHINE_HOME}/logs/services`,
+				'for i in $(seq 1 30); do fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1 || break; echo "waiting for dpkg lock ($i/30)..."; sleep 2; done',
 				"apt-get update -qq >/dev/null",
 				"apt-get install -y -qq curl git build-essential ca-certificates jq sqlite3 dnsutils iproute2 netcat-openbsd >/dev/null",
 			].join(" && ");
@@ -192,6 +193,7 @@ function commandFor(
 						"set -e",
 						`export HOME=${HOME}`,
 						`export PATH=${HOME}/.local/bin:$PATH`,
+						'for i in $(seq 1 30); do fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1 || break; echo "waiting for dpkg lock ($i/30)..."; sleep 2; done',
 						`apt-get update -qq >/dev/null && apt-get install -y -qq python3-venv python3-pip >/dev/null`,
 						`rm -rf ${HERMES_HOME}/venv && python3 -m venv ${HERMES_HOME}/venv`,
 						`${HERMES_HOME}/venv/bin/python -m pip install --upgrade pip`,
@@ -201,6 +203,7 @@ function commandFor(
 		case "install-node":
 			return [
 				"set -e",
+				'for i in $(seq 1 30); do fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1 || break; echo "waiting for dpkg lock ($i/30)..."; sleep 2; done',
 				"command -v node >/dev/null || (curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && apt-get install -y nodejs)",
 				"node --version",
 			].join(" && ");
@@ -254,6 +257,7 @@ function installClosedLoopTools(): string {
 		`export AGENT_BROWSER_DATA_DIR=${AGENT_BROWSER_HOME}`,
 		`export PATH=${NPM_PREFIX}/bin:${HOME}/.local/bin:$PATH`,
 		"npm install -g --no-audit --no-fund --loglevel=error agent-browser playwright @playwright/mcp",
+		'for i in $(seq 1 30); do fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1 || break; echo "waiting for dpkg lock ($i/30)..."; sleep 2; done',
 		"playwright install --with-deps chromium",
 		"agent-browser install",
 		"uv tool install 'httpx[cli]' || python3 -m pip install --user 'httpx[cli]'",

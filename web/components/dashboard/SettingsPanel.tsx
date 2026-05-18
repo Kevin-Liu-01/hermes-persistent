@@ -209,9 +209,9 @@ export function SettingsPanel({ initialConfig }: Props) {
 							: "border-[var(--ret-green)]/40 bg-[var(--ret-green)]/5"
 					}
 				>
-					<p className="p-3 font-mono text-[11px] text-[var(--ret-text)]">
-						{state.phase === "saving" ? "saving..." : state.message}
-					</p>
+				<p className="p-3 text-[11px] text-[var(--ret-text)]">
+					{state.phase === "saving" ? "saving..." : state.message}
+				</p>
 				</ReticleFrame>
 			) : null}
 
@@ -466,9 +466,9 @@ function AiProviderBox({
 					<p className="font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--ret-text)]">
 						{title}
 					</p>
-					<p className="font-mono text-[9px] text-[var(--ret-text-muted)]">
-						{hint}
-					</p>
+				<p className="text-[9px] text-[var(--ret-text-muted)]">
+					{hint}
+				</p>
 				</div>
 				<ReticleBadge variant={configured ? "success" : "default"}>
 					{configured ? "configured" : "empty"}

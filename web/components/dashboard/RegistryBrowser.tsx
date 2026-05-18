@@ -150,13 +150,14 @@ export function RegistryBrowser({ installedIds }: Props) {
 			{/* Search + URL import */}
 			<div className="flex flex-wrap items-end gap-3">
 				<div className="flex-1">
-					<input
-						type="search"
-						placeholder="search skills, MCPs, CLIs, tools..."
-						value={query}
-						onChange={(e) => handleQueryChange(e.target.value)}
-						className="w-full border border-[var(--ret-border)] bg-[var(--ret-bg)] px-3 py-2 font-mono text-[12px] text-[var(--ret-text)] placeholder:text-[var(--ret-text-muted)] focus:border-[var(--ret-purple)] focus:outline-none"
-					/>
+				<input
+					type="search"
+					aria-label="Search registry"
+					placeholder="search skills, MCPs, CLIs, tools..."
+					value={query}
+					onChange={(e) => handleQueryChange(e.target.value)}
+					className="w-full border border-[var(--ret-border)] bg-[var(--ret-bg)] px-3 py-2 font-mono text-[12px] text-[var(--ret-text)] placeholder:text-[var(--ret-text-muted)] focus:border-[var(--ret-purple)] focus:outline-none"
+				/>
 				</div>
 				<button
 					type="button"
@@ -261,22 +262,22 @@ export function RegistryBrowser({ installedIds }: Props) {
 
 			{/* Results */}
 			{state.phase === "loading" ? (
-				<div className="py-12 text-center font-mono text-[12px] text-[var(--ret-text-muted)]">
-					searching registries...
-				</div>
+			<div className="py-12 text-center text-[12px] text-[var(--ret-text-muted)]">
+				searching registries...
+			</div>
 			) : state.phase === "error" ? (
 				<ReticleFrame>
-					<div className="p-6 text-center font-mono text-[12px] text-[var(--ret-red)]">
-						{state.message}
-					</div>
+				<div className="p-6 text-center text-[12px] text-[var(--ret-red)]">
+					{state.message}
+				</div>
 				</ReticleFrame>
 			) : items.length === 0 && state.phase === "done" ? (
 				<ReticleFrame>
-					<div className="p-8 text-center font-mono text-[12px] text-[var(--ret-text-muted)]">
-						{query
-							? `no results for "${query}"`
-							: "type a search query or select a source to browse"}
-					</div>
+				<div className="p-8 text-center text-[12px] text-[var(--ret-text-muted)]">
+					{query
+						? `no results for "${query}"`
+						: "type a search query or select a source to browse"}
+				</div>
 				</ReticleFrame>
 			) : (
 				<div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">

@@ -18,7 +18,6 @@ import type {
 	CursorRunsPayload,
 	LiveDataEnvelope,
 } from "@/lib/dashboard/types";
-import { getUserConfig } from "@/lib/user-config/clerk";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -50,25 +49,15 @@ function parseLine(line: string): CursorRun | null {
 	}
 }
 
-export async function GET(): Promise<Response> {
+export async function GET(request: Request): Promise<Response> {
 	const userId = await getEffectiveUserId();
 	if (!userId) {
 		return Response.json({ error: "unauthorized" }, { status: 401 });
 	}
 
-	const config = await getUserConfig();
-	const active = config.machines.find((m) => m.id === config.activeMachineId);
-	if (!active || !config.providers.dedalus?.apiKey) {
-		const envelope: LiveDataEnvelope<CursorRunsPayload> = {
-			ok: false,
-			reason: "config_missing",
-			message:
-				"No machine configured. Complete /dashboard/setup to provision.",
-		};
-		return Response.json(envelope);
-	}
+	const machineId = new URL(request.url).searchParams.get("machineId") ?? undefined;
 
-	if (!(await isMachineRunning())) {
+	if (!(await isMachineRunning(machineId))) {
 		const envelope: LiveDataEnvelope<CursorRunsPayload> = {
 			ok: false,
 			reason: "machine_offline",
@@ -80,6 +69,7 @@ export async function GET(): Promise<Response> {
 	try {
 		const { stdout } = await execOnMachine(
 			`if [ -f ${LOG_PATH} ]; then tail -n ${MAX_LINES} ${LOG_PATH}; else echo ""; fi`,
+			{ machineId },
 		);
 		const lines = stdout.split("\n").filter((line) => line.trim().length > 0);
 		const runs: CursorRun[] = lines

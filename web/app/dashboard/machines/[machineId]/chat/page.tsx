@@ -1,6 +1,7 @@
 import { ChatShell } from "@/components/dashboard/ChatShell";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { getUserConfig } from "@/lib/user-config/clerk";
+import { AGENT_LABEL } from "@/lib/user-config/schema";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +13,7 @@ export default async function MachineChatPage({ params }: Props) {
 	const { machineId } = await params;
 	const config = await getUserConfig();
 	const machine = config.machines.find((m) => m.id === machineId);
-	const agentLabel = machine?.agentKind === "openclaw" ? "openclaw" : "hermes";
+	const agentLabel = machine?.agentKind ? AGENT_LABEL[machine.agentKind] : "agent";
 
 	return (
 		<div className="flex flex-col">

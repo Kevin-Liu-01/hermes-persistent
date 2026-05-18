@@ -474,9 +474,9 @@ function EmptyState({
 	if (hasMatches) return null;
 	return (
 		<ReticleFrame>
-			<div className="p-8 text-center font-mono text-[12px] text-[var(--ret-text-muted)]">
-				no matches for &quot;{query}&quot;
-			</div>
+		<div className="p-8 text-center text-[12px] text-[var(--ret-text-muted)]">
+			no matches for &quot;{query}&quot;
+		</div>
 		</ReticleFrame>
 	);
 }
@@ -638,9 +638,9 @@ function PresetStrip({
 							</span>
 						))}
 						{sources.length === 0 ? (
-							<span className="font-mono text-[10px] text-[var(--ret-text-muted)]">
-								no enabled sources
-							</span>
+						<span className="text-[10px] text-[var(--ret-text-muted)]">
+							no enabled sources
+						</span>
 						) : null}
 					</div>
 				</div>

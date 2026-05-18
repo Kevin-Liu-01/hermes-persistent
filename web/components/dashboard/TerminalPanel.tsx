@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { useOptionalMachineContext } from "@/components/dashboard/MachineProvider";
 import { ReticleBadge } from "@/components/reticle/ReticleBadge";
 import { ReticleButton } from "@/components/reticle/ReticleButton";
 import { ReticleLabel } from "@/components/reticle/ReticleLabel";
@@ -143,6 +144,7 @@ type Props = {
 };
 
 export function TerminalPanel({ initialCommand }: Props) {
+	const machineCtx = useOptionalMachineContext();
 	const [input, setInput] = useState(initialCommand ?? "");
 	const [entries, setEntries] = useState<Entry[]>([]);
 	const [history, setHistory] = useState<string[]>([]);
@@ -251,7 +253,7 @@ export function TerminalPanel({ initialCommand }: Props) {
 				const response = await fetch("/api/dashboard/exec/stream", {
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({ command }),
+					body: JSON.stringify({ command, machineId: machineCtx?.machineId }),
 				});
 
 				if (!response.ok || !response.body) {

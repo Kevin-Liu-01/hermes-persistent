@@ -138,7 +138,7 @@ export function RegistryCard({ item, onAdd, onRemove }: Props) {
 					)}
 				</div>
 				{error ? (
-					<p className="font-mono text-[10px] text-[var(--ret-red)]">{error}</p>
+					<p className="text-[10px] text-[var(--ret-red)]">{error}</p>
 				) : null}
 			</div>
 		</ReticleFrame>

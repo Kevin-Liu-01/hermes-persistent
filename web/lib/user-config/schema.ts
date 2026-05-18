@@ -289,6 +289,7 @@ export type UserConfig = {
 	draftProviderKind: ProviderKind;
 	draftSpec: MachineSpec;
 	draftModel: string;
+	metricsEnabled?: boolean;
 };
 
 const DEFAULT_CREATED_AT = new Date(0).toISOString();

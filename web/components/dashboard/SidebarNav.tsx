@@ -50,6 +50,8 @@ type Props = {
 const FLEET_OVERVIEW_ITEMS: ReadonlyArray<NavItem> = [
 	{ href: "/dashboard", label: "Overview", icon: IconGrid },
 	{ href: "/dashboard/machines", label: "Machines", icon: IconStack },
+	{ href: "/dashboard/containers", label: "Containers", icon: IconBox },
+	{ href: "/dashboard/usage", label: "Usage", icon: IconWave },
 ];
 
 const FLEET_CONFIG_ITEMS: ReadonlyArray<NavItem> = [

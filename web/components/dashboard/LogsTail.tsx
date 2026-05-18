@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { EmptyState } from "@/components/dashboard/EmptyState";
+import { useOptionalMachineContext } from "@/components/dashboard/MachineProvider";
 import { ReticleButton } from "@/components/reticle/ReticleButton";
 import { cn } from "@/lib/cn";
 import { formatAge, formatBytes } from "@/lib/dashboard/format";
@@ -25,17 +26,22 @@ const LEVEL_COLOR: Record<LogLine["level"], string> = {
  * function budget.
  */
 export function LogsTail() {
+	const machineCtx = useOptionalMachineContext();
 	const [envelope, setEnvelope] = useState<LiveDataEnvelope<LogsPayload> | null>(null);
 	const [follow, setFollow] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const tailRef = useRef<HTMLDivElement>(null);
 
+	const machineId = machineCtx?.machineId;
+
 	useEffect(() => {
 		let stopped = false;
+		const params = new URLSearchParams({ n: "200" });
+		if (machineId) params.set("machineId", machineId);
 
 		async function tick() {
 			try {
-				const response = await fetch("/api/dashboard/logs?n=200", {
+				const response = await fetch(`/api/dashboard/logs?${params.toString()}`, {
 					cache: "no-store",
 				});
 				if (!response.ok) {
@@ -80,9 +86,9 @@ export function LogsTail() {
 
 	if (!envelope) {
 		return (
-			<div className="px-6 py-10 font-mono text-[12px] text-[var(--ret-text-muted)]">
-				Loading logs...
-			</div>
+		<div className="px-6 py-10 text-[12px] text-[var(--ret-text-muted)]">
+			Loading logs...
+		</div>
 		);
 	}
 
@@ -138,9 +144,9 @@ export function LogsTail() {
 				className="max-h-[68vh] overflow-y-auto border border-[var(--ret-border)] bg-[var(--ret-bg)] font-mono text-[12px] leading-relaxed"
 			>
 				{lines.length === 0 ? (
-					<div className="px-5 py-6 text-[var(--ret-text-muted)]">
-						No log lines yet. Send a message in chat and they'll show up here.
-					</div>
+				<div className="px-5 py-6 font-sans text-[var(--ret-text-muted)]">
+					No log lines yet. Send a message in chat and they'll show up here.
+				</div>
 				) : (
 					<table className="w-full border-collapse">
 						<tbody>

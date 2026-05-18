@@ -83,64 +83,103 @@ function AnimatedWord({ word, hue }: { word: string; hue: string }) {
 	const [charTimestamps, setCharTimestamps] = useState<number[]>(
 		() => Array.from({ length: word.length }, () => 0),
 	);
-	const target = useRef(word);
+	const gen = useRef(0);
 	const timer = useRef<ReturnType<typeof setTimeout>>(null);
 	const phaseRef = useRef<TypePhase>("idle");
+	const charCountRef = useRef(word.length);
 
 	useEffect(() => {
-		if (word === target.current && phaseRef.current === "idle") return;
-		target.current = word;
+		if (timer.current) clearTimeout(timer.current);
+		gen.current += 1;
+		const myGen = gen.current;
 
-		if (phaseRef.current === "idle") {
-			phaseRef.current = "deleting";
-			setPhase("deleting");
-			tick();
+		if (word === displayed && phaseRef.current === "idle") return;
+
+		phaseRef.current = "deleting";
+		setPhase("deleting");
+
+		function stale() {
+			return myGen !== gen.current;
 		}
 
+		function scheduleNext(ms: number) {
+			if (timer.current) clearTimeout(timer.current);
+			timer.current = setTimeout(tick, ms);
+		}
+
+		scheduleNext(60);
+
 		function tick() {
+			if (stale()) return;
+
 			if (phaseRef.current === "deleting") {
-				setCharCount((c) => {
-					if (c <= 0) {
-						phaseRef.current = "pause";
-						setPhase("pause");
-						setDisplayed(target.current);
-						timer.current = setTimeout(() => {
-							phaseRef.current = "typing";
-							setPhase("typing");
-							setCharTimestamps([]);
-							tick();
-						}, 280);
-						return 0;
-					}
-					const speed = 30 + Math.max(0, c - 2) * 6;
-					timer.current = setTimeout(tick, speed);
-					return c - 1;
-				});
+				const c = charCountRef.current;
+				if (c <= 0) {
+					phaseRef.current = "pause";
+					setPhase("pause");
+					setDisplayed(word);
+					scheduleNext(280);
+					return;
+				}
+				const next = c - 1;
+				charCountRef.current = next;
+				setCharCount(next);
+				scheduleNext(30 + Math.max(0, next - 2) * 6);
+			} else if (phaseRef.current === "pause") {
+				if (stale()) return;
+				phaseRef.current = "typing";
+				setPhase("typing");
+				setCharTimestamps([]);
+				scheduleNext(60);
 			} else if (phaseRef.current === "typing") {
-				setCharCount((c) => {
-					if (c >= target.current.length) {
-						phaseRef.current = "idle";
-						setPhase("idle");
-						return target.current.length;
-					}
-					setCharTimestamps((ts) => [...ts, performance.now()]);
-					const progress = c / Math.max(target.current.length - 1, 1);
-					const base = 70;
-					const ease = progress < 0.2
-						? base + (1 - progress / 0.2) * 60
-						: progress > 0.85
-							? base + ((progress - 0.85) / 0.15) * 40
-							: base;
-					timer.current = setTimeout(tick, ease + Math.random() * 35);
-					return c + 1;
-				});
+				const c = charCountRef.current;
+				if (c >= word.length) {
+					phaseRef.current = "idle";
+					setPhase("idle");
+					return;
+				}
+				const next = c + 1;
+				charCountRef.current = next;
+				setCharCount(next);
+				setCharTimestamps((ts) => [...ts, performance.now()]);
+				const progress = c / Math.max(word.length - 1, 1);
+				const base = 70;
+				const ease = progress < 0.2
+					? base + (1 - progress / 0.2) * 60
+					: progress > 0.85
+						? base + ((progress - 0.85) / 0.15) * 40
+						: base;
+				scheduleNext(ease + Math.random() * 35);
 			}
 		}
 
 		return () => {
 			if (timer.current) clearTimeout(timer.current);
 		};
-	}, [word]);
+	}, [word, displayed]);
+
+	useEffect(() => {
+		function onVisibilityChange() {
+			if (document.visibilityState !== "visible") return;
+			if (phaseRef.current === "idle" || phaseRef.current === "pause") return;
+			if (timer.current) clearTimeout(timer.current);
+			const myGen = gen.current;
+			timer.current = setTimeout(() => {
+				if (myGen !== gen.current) return;
+				if (phaseRef.current === "deleting") {
+					const next = Math.max(charCountRef.current - 1, 0);
+					charCountRef.current = next;
+					setCharCount(next);
+				} else if (phaseRef.current === "typing") {
+					const next = Math.min(charCountRef.current + 1, displayed.length);
+					charCountRef.current = next;
+					setCharCount(next);
+				}
+			}, 50);
+		}
+		document.addEventListener("visibilitychange", onVisibilityChange);
+		return () => document.removeEventListener("visibilitychange", onVisibilityChange);
+	}, [displayed]);
 
 	const now = typeof performance !== "undefined" ? performance.now() : 0;
 
@@ -389,23 +428,33 @@ export function HeroBlock() {
 	const hue = isCursor ? "var(--ret-purple)" : AGENT_HUE[agent];
 	const orbitAgent = isCursor ? null : agent;
 
-	function selectRailIndex(idx: number) {
-		setWordIndex(idx);
-		const rail = RAIL_AGENTS[idx];
-		if (rail.id) setAgent(rail.id);
-	}
+	const cycleTimer = useRef<ReturnType<typeof setTimeout>>(null);
 
-	/* Auto-cycle through all 5 (including Cursor) every 6s */
-	useEffect(() => {
-		const id = setInterval(() => {
+	function scheduleCycle() {
+		if (cycleTimer.current) clearTimeout(cycleTimer.current);
+		cycleTimer.current = setTimeout(() => {
 			setWordIndex((cur) => {
 				const next = (cur + 1) % RAIL_AGENTS.length;
 				const rail = RAIL_AGENTS[next];
 				if (rail.id) setAgent(rail.id);
 				return next;
 			});
+			scheduleCycle();
 		}, 6000);
-		return () => clearInterval(id);
+	}
+
+	function selectRailIndex(idx: number) {
+		setWordIndex(idx);
+		const rail = RAIL_AGENTS[idx];
+		if (rail.id) setAgent(rail.id);
+		scheduleCycle();
+	}
+
+	useEffect(() => {
+		scheduleCycle();
+		return () => {
+			if (cycleTimer.current) clearTimeout(cycleTimer.current);
+		};
 	}, []);
 
 	return (
@@ -481,14 +530,14 @@ export function HeroBlock() {
 						</div>
 					</div>
 				</Cell>
-				<Cell action="checking version..." agent={agent} hue={hue} className="hidden !border-b-0 md:block" hoverVisual={<HoverGlow color={hue} />}>
-					<div className="flex h-full items-center justify-center gap-1.5 px-2 py-3">
+			<Cell action="checking version..." agent={agent} hue={hue} className="hidden !border-b-0 md:block" hoverVisual={<HoverGlow color={hue} />}>
+				<div className="flex h-full items-center justify-center gap-1.5 px-2 py-3">
 						<span className="text-[8px] uppercase tracking-[0.2em] text-[var(--ret-text-muted)]">VER</span>
 						<span className="font-mono text-[9px] text-[var(--ret-text-dim)]">0.1.0</span>
 					</div>
 				</Cell>
 				<Cell action="polling status..." agent={agent} hue={hue} className="hidden !border-b-0 md:block" hoverVisual={<HoverHatch color={hue} angle={45} />}>
-					<div className="flex h-full items-center justify-center gap-1.5 px-2 py-3">
+				<div className="flex h-full items-center justify-center gap-1.5 px-2 py-3">
 						<span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--ret-green)]" />
 						<ReticleBadge variant="success" className="!py-0 !text-[7px]">LIVE</ReticleBadge>
 					</div>
@@ -716,7 +765,7 @@ export function HeroBlock() {
 				</Cell>
 
 				{/* ═══ Row 6: Observe tools | CTAs + empty ═══ */}
-				<Cell action="" agent={agent} hue={hue} className="hidden !border-b-0 md:flex md:items-center md:justify-center" hoverVisual={<HoverPulseGrid color={hue} />} noLabel>
+				<Cell action="" agent={agent} hue={hue} className="hidden !border-b-0 md:flex md:items-center md:justify-center" hoverVisual={<HoverGlow color={hue} />} noLabel>
 					<div className="flex flex-col items-center gap-1.5 px-3 py-3">
 						<span className="text-[7px] uppercase tracking-[0.2em] text-[var(--ret-text-muted)]">Observe</span>
 						<div className="grid grid-cols-2 gap-1">

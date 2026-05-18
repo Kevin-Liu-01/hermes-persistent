@@ -225,11 +225,11 @@ export function SetupWizard({ initialConfig, defaults }: Props) {
 			/>
 
 			{error ? (
-				<ReticleFrame className="border-[var(--ret-red)]/50 bg-[var(--ret-red)]/5 p-4">
-					<p className="font-mono text-[11px] text-[var(--ret-red)]">
-						error: {error}
-					</p>
-				</ReticleFrame>
+			<ReticleFrame className="border-[var(--ret-red)]/50 bg-[var(--ret-red)]/5 p-4">
+				<p className="text-[11px] text-[var(--ret-red)]">
+					error: {error}
+				</p>
+			</ReticleFrame>
 			) : null}
 
 			{activeStep === "api-key" ? (
@@ -348,9 +348,9 @@ function StepRail({
 							<p className="font-mono text-[11px] text-[var(--ret-text)]">
 								{step.label}
 							</p>
-							<p className="font-mono text-[10px] text-[var(--ret-text-muted)]">
-								{step.hint}
-							</p>
+						<p className="text-[10px] text-[var(--ret-text-muted)]">
+							{step.hint}
+						</p>
 						</div>
 					</li>
 				);
@@ -619,11 +619,11 @@ function KeyField({
 					onChange={(e) => onChange(e.target.value)}
 					className="border border-[var(--ret-border)] bg-[var(--ret-bg)] px-3 py-2 font-mono text-[12px] text-[var(--ret-text)] placeholder:text-[var(--ret-text-muted)] focus:border-[var(--ret-purple)] focus:outline-none"
 				/>
-				<span className="font-mono text-[10px] text-[var(--ret-text-muted)]">
-					{hint}
-				</span>
-			</label>
-			{secondary ? (
+			<span className="text-[10px] text-[var(--ret-text-muted)]">
+				{hint}
+			</span>
+		</label>
+		{secondary ? (
 				<label className="flex flex-col gap-1.5">
 					<span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--ret-text-muted)]">
 						{secondary.label}
@@ -881,10 +881,10 @@ function NumField({
 				onChange={(e) => onChange(Number(e.target.value))}
 				className="border border-[var(--ret-border)] bg-[var(--ret-bg)] px-3 py-2 font-mono text-[12px] text-[var(--ret-text)] focus:border-[var(--ret-purple)] focus:outline-none"
 			/>
-			<span className="font-mono text-[10px] text-[var(--ret-text-muted)]">
-				{hint}
-			</span>
-		</label>
+		<span className="text-[10px] text-[var(--ret-text-muted)]">
+			{hint}
+		</span>
+	</label>
 	);
 }
 
@@ -910,10 +910,10 @@ function TextField({
 				onChange={(e) => onChange(e.target.value)}
 				className="border border-[var(--ret-border)] bg-[var(--ret-bg)] px-3 py-2 font-mono text-[12px] text-[var(--ret-text)] focus:border-[var(--ret-purple)] focus:outline-none"
 			/>
-			<span className="font-mono text-[10px] text-[var(--ret-text-muted)]">
-				{hint}
-			</span>
-		</label>
+		<span className="text-[10px] text-[var(--ret-text-muted)]">
+			{hint}
+		</span>
+	</label>
 	);
 }
 
@@ -1032,10 +1032,10 @@ function ProvisionedStep({
 					<Row label="provider" value={active?.providerKind ?? config.draftProviderKind} />
 					<Row label="total machines" value={String(config.machines.length)} />
 				</dl>
-				<p className="border border-dashed border-[var(--ret-border)] bg-[var(--ret-surface)] p-3 font-mono text-[11px] text-[var(--ret-text-dim)]">
-					Gateway status is saved on the machine record. If the tunnel expires,
-					open chat and click Bootstrap agent to refresh the gateway URL/key.
-				</p>
+			<p className="border border-dashed border-[var(--ret-border)] bg-[var(--ret-surface)] p-3 text-[11px] text-[var(--ret-text-dim)]">
+				Gateway status is saved on the machine record. If the tunnel expires,
+				open chat and click Bootstrap agent to refresh the gateway URL/key.
+			</p>
 				<div className="flex flex-wrap justify-end gap-2">
 					<ReticleButton variant="secondary" size="sm" onClick={onMachines}>
 						Open machines
