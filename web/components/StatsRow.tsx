@@ -84,7 +84,7 @@ const FEATURES: ReadonlyArray<Feature> = [
 				id: "dedalus",
 				icon: { kind: "logo", mark: "dedalus" },
 				name: "Dedalus Machines",
-				role: "Persistent microVMs that sleep on idle and wake on demand",
+				role: "Persistent VMs that sleep on idle and wake on demand",
 				href: "https://docs.dedaluslabs.ai/dcs",
 			},
 			{
@@ -180,7 +180,7 @@ export function StatsRow() {
 				<div className="flex flex-col justify-center">
 					<ReticleLabel>MACHINE SPEC</ReticleLabel>
 					<h2 className="ret-display mt-3 text-xl tracking-tight md:text-2xl">
-						What each microVM ships with out of the box.
+						What each VM ships with out of the box.
 					</h2>
 				</div>
 				<div className="flex flex-col gap-3">

@@ -37,7 +37,7 @@ const SECONDARY_MARK: Record<AgentKind, "nous" | "openclaw" | "anthropic" | "ope
  * Lockup of the Dedalus mark x the agent's mark separated by a thin "x".
  * Used in the public landing navbar, the dashboard status header, and
  * the sign-in card so the collaboration is the first thing a visitor sees:
- * agent-machines is the binding between Dedalus's microVM runtime and an
+ * agent-machines is the binding between Dedalus's VM runtime and an
  * agent personality (Hermes by default, OpenClaw as an alternative).
  */
 export function BrandMark({

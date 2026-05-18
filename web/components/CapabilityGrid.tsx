@@ -16,7 +16,7 @@ const CAPABILITIES: ReadonlyArray<Capability> = [
 	{
 		kicker: "STATE",
 		title: "Disk persists across sleeps",
-		body: "Chat history, files, MEMORY.md, the FTS5 sessions DB, cron schedules, Python venv, skills -- all on /home/machine. The microVM hibernates; the disk is the source of truth.",
+		body: "Chat history, files, MEMORY.md, the FTS5 sessions DB, cron schedules, Python venv, skills -- all on /home/machine. The VM hibernates; the disk is the source of truth.",
 		notes: ["/home/machine", "MEMORY.md", "FTS5"],
 		mark: "agent",
 		nyx: "nyx-waves",
@@ -30,8 +30,8 @@ const CAPABILITIES: ReadonlyArray<Capability> = [
 	{
 		kicker: "RUNTIME",
 		title: "Sleep / wake by second",
-		body: "Dedalus microVMs hibernate idle, wake on first prompt -- <30s cold, <5s warm. Billed by the second. Wake-on-read wired into chat and dashboard.",
-		notes: ["microVM", "wake-on-read", "second-billed"],
+		body: "Dedalus VMs hibernate idle, wake on first prompt -- <30s cold, <5s warm. Billed by the second. Wake-on-read wired into chat and dashboard.",
+		notes: ["VM", "wake-on-read", "second-billed"],
 		mark: "dedalus",
 		nyx: "nyx-lines",
 	},

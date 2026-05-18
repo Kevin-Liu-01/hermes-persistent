@@ -19,7 +19,7 @@ const BENTOS: ReadonlyArray<BentoItem> = [
 	{
 		kicker: "01 / the model",
 		title: "Agent → Gateway → Container",
-		body: "Your agent runs inside a persistent microVM. Chat goes through a gateway that serves an OpenAI-compatible /v1 endpoint. The container holds disk, tools, skills, and crons.",
+		body: "Your agent runs inside a persistent Linux VM. Chat goes through a gateway that serves an OpenAI-compatible /v1 endpoint. The VM holds disk, tools, skills, and crons.",
 		span: "wide",
 		variant: "nyx-waves",
 		diagram: "agent-flow",

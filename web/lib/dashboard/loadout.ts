@@ -1254,7 +1254,7 @@ export const TRUSTED_ADDONS: ReadonlyArray<TrustedAddOn> = [
 		kind: "provider",
 		provider: "Vercel",
 		description:
-			"Ephemeral microVM sessions for safe code execution, browser automation, and temporary agent runs.",
+			"Ephemeral VM sessions for safe code execution, browser automation, and temporary agent runs.",
 		source: "@vercel/sandbox",
 		command: null,
 		brand: "vercel",

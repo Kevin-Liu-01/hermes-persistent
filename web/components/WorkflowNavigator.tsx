@@ -78,7 +78,7 @@ const STEPS: ReadonlyArray<Step> = [
 		body: "Persistent-machine providers expose disk, wake/sleep, destroy, and exec. Ephemeral sandboxes expose session exec and external storage.",
 		Icon: IconProvider,
 		bullets: [
-			["", "Dedalus", " — persistent microVM with full disk"],
+			["", "Dedalus", " — persistent VM with full disk"],
 			["", "Fly", " — app + volume + machine"],
 			["", "Sandbox", " — ephemeral session execution"],
 		],
@@ -278,7 +278,7 @@ function DashboardTerminal() {
 			<TSpacer />
 			<TRow label="Machine" value="main-01" />
 			<TRow label="Status" value="awake" success />
-			<TRow label="Provider" value="dedalus (persistent microVM)" />
+			<TRow label="Provider" value="dedalus (persistent VM)" />
 			<TRow label="Disk" value="2.1 / 10 GiB" />
 			<TRow label="Last wake" value="12m ago" />
 			<TSpacer />

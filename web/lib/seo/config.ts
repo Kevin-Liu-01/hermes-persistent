@@ -14,7 +14,7 @@ export const SITE = {
 	wordmark: "agent-machines",
 	url: "https://www.agent-machines.dev",
 	description:
-		"A persistent machine for your agent. One stateful microVM per Clerk account; chat history, files, learned skills, and cron live on /home/machine. Hermes or OpenClaw, Dedalus Machines today, provider abstraction for Vercel Sandbox and Fly, 96 skills, 23 built-ins, and 17 service routes.",
+		"A persistent machine for your agent. One stateful Linux VM per Clerk account; chat history, files, learned skills, and cron live on /home/machine. Hermes or OpenClaw, Dedalus Machines today, provider abstraction for Vercel Sandbox and Fly, 96 skills, 23 built-ins, and 17 service routes.",
 	tagline: "A persistent machine for your agent",
 	ogImage: "/og.png",
 	twitterHandle: "@kevin_liu_01",
@@ -29,7 +29,7 @@ export const SITE = {
 		"Hermes agent",
 		"OpenClaw agent",
 		"Dedalus Machines",
-		"microVM agent",
+		"VM agent",
 		"OpenAI-compatible chat completions",
 		"agent fleet",
 		"per-account agent",

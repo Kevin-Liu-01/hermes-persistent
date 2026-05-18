@@ -2,6 +2,7 @@ import { UserButton } from "@clerk/nextjs";
 import type { SVGProps } from "react";
 
 import { SignedIn, SignedOut } from "@/components/AuthSwitch";
+import { AnimatedBrandMark } from "@/components/AnimatedBrandMark";
 import { BrandMark } from "@/components/BrandMark";
 import { GitHubStarLink } from "@/components/GitHubStarLink";
 import { ReticleButton } from "@/components/reticle/ReticleButton";
@@ -52,7 +53,7 @@ export async function PublicNavbar({
 		<ReticleNavbar>
 			<div className="flex h-12 items-center justify-between gap-4 px-5">
 				<a href="/" className="group flex items-center gap-2.5">
-					<BrandMark size={20} withLabel={false} />
+					<AnimatedBrandMark size={20} />
 					<span
 						className="text-[20px] leading-none tracking-tight text-[var(--ret-text)] transition-colors group-hover:text-[var(--ret-purple)]"
 						style={{ fontFamily: "var(--font-display-serif)" }}

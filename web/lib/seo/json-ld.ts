@@ -85,7 +85,7 @@ export function buildRootJsonLd(): JsonLdGraph {
 				description: SITE.description,
 				url: SITE.url,
 				featureList: [
-					"Per-account persistent microVM",
+					"Per-account persistent Linux VM",
 					"Stateful filesystem at /home/machine",
 					"Hermes and OpenClaw agent runtimes",
 					"Dedalus Machines provider live today",

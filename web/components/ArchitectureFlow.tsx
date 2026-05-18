@@ -389,12 +389,12 @@ const INITIAL_NODES: Node<NodeData>[] = [
 		data: {
 			eyebrow: "provider",
 			title: "Dedalus Machines",
-			subtitle: "default microVM provider",
+			subtitle: "default VM provider",
 			body: "Provisions, wakes, sleeps, executes commands. Second-billed; ~30s cold boot, <5s warm.",
 			bullets: [
 				"provision / wake / sleep",
 				"state / exec / destroy",
-				"second-billed microVM",
+				"second-billed VM",
 			],
 			mark: "dedalus",
 			tone: "provider",
@@ -409,7 +409,7 @@ const INITIAL_NODES: Node<NodeData>[] = [
 		data: {
 			eyebrow: "provider",
 			title: "Fly Machines",
-			subtitle: "regional microVM",
+			subtitle: "regional VM",
 			body: "Persistent Firecracker host through machines.dev. Uses app + volume + machine resources; IDs are encoded as app:machine.",
 			bullets: [
 				"app + volume create",
@@ -429,7 +429,7 @@ const INITIAL_NODES: Node<NodeData>[] = [
 			eyebrow: "active runtime",
 			title: "persistent Linux machine",
 			subtitle: "/home/machine is the durable volume",
-			body: "The product boundary. A resumable microVM with persistent disk: sleep stops compute, the filesystem survives. Everything below this row lives on this machine.",
+			body: "The product boundary. A resumable VM with persistent disk: sleep stops compute, the filesystem survives. Everything below this row lives on this machine.",
 			bullets: [
 				"1 vCPU / 2 GiB / 10 GiB default",
 				"sleep / wake by the second",

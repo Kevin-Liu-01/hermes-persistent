@@ -21,7 +21,7 @@ export type AgentKind = "hermes" | "openclaw" | "claude-code" | "codex";
 
 export const AGENT_KINDS: ReadonlyArray<AgentKind> = ["hermes", "openclaw", "claude-code", "codex"];
 
-/** Where the agent's microVM lives. */
+/** Where the agent's VM lives. */
 export type ProviderKind = "dedalus" | "vercel-sandbox" | "fly";
 
 export const PROVIDER_KINDS: ReadonlyArray<ProviderKind> = [

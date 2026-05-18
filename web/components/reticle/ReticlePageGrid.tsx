@@ -37,8 +37,8 @@ export function ReticlePageGrid({
 	return (
 		<PageGridContext.Provider value={true}>
 			<div
-				className={cn("relative min-h-[100dvh] overflow-x-hidden bg-[var(--ret-bg)]", className)}
-				style={style}
+				className={cn("relative min-h-[100dvh] bg-[var(--ret-bg)]", className)}
+				style={{ ...style, overflowX: "clip" }}
 			>
 				{/* Left margin hatch: hugs the content edge */}
 				<div

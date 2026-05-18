@@ -4,10 +4,7 @@ import dynamic from "next/dynamic";
 import { type ReactNode, useEffect, useRef, useState, type SVGProps } from "react";
 
 import { SignedIn, SignedOut } from "@/components/AuthSwitch";
-import {
-	HERO_AGENTS,
-	type HeroAgent,
-} from "@/components/HeroAgentPortrait";
+import { type HeroAgent } from "@/components/HeroAgentPortrait";
 import { Logo, type CompositeMark } from "@/components/Logo";
 import { ServiceIcon } from "@/components/ServiceIcon";
 import { ToolIcon } from "@/components/ToolIcon";
@@ -15,26 +12,10 @@ import { ReticleBadge } from "@/components/reticle/ReticleBadge";
 import { ReticleButton } from "@/components/reticle/ReticleButton";
 import { ReticleLabel } from "@/components/reticle/ReticleLabel";
 
-/* ── Per-agent 3D scenes (lazy) ── */
+/* ── 3D scenes (lazy) ── */
 
-const HermesBustScene = dynamic(
-	() => import("@/components/three").then((m) => m.HermesBustScene),
-	{ ssr: false, loading: () => null },
-);
-const WireframeAgentScene = dynamic(
-	() => import("@/components/three").then((m) => m.WireframeAgent),
-	{ ssr: false, loading: () => null },
-);
-const HeadTriptychScene = dynamic(
-	() => import("@/components/three").then((m) => m.HeadTriptych),
-	{ ssr: false, loading: () => null },
-);
-const WireframeMachineScene = dynamic(
-	() => import("@/components/three").then((m) => m.WireframeMachine),
-	{ ssr: false, loading: () => null },
-);
-const WireframeDashboardScene = dynamic(
-	() => import("@/components/three").then((m) => m.WireframeDashboard),
+const HeroOrbitScene = dynamic(
+	() => import("@/components/three").then((m) => m.HeroOrbit),
 	{ ssr: false, loading: () => null },
 );
 const WireframeLoadoutScene = dynamic(
@@ -49,13 +30,10 @@ const WireframeEnvironmentScene = dynamic(
 	() => import("@/components/three").then((m) => m.WireframeEnvironment),
 	{ ssr: false, loading: () => null },
 );
-
-const AGENT_SCENE: Record<HeroAgent, React.ComponentType<{ className?: string }>> = {
-	hermes: HermesBustScene,
-	openclaw: WireframeAgentScene,
-	"claude-code": HeadTriptychScene,
-	codex: WireframeMachineScene,
-};
+const WireframeDashboardScene = dynamic(
+	() => import("@/components/three").then((m) => m.WireframeDashboard),
+	{ ssr: false, loading: () => null },
+);
 
 /* ── Agent metadata ── */
 
@@ -94,33 +72,68 @@ const AGENT_LABEL: Record<HeroAgent, string> = {
 	codex: "Codex CLI",
 };
 
-/* ── Animated heading word ── */
+/* ── Animated heading word (typewriter delete + retype) ── */
 
 function AnimatedWord({ word, hue }: { word: string; hue: string }) {
-	const [display, setDisplay] = useState(word);
-	const [animating, setAnimating] = useState(false);
+	const [displayed, setDisplayed] = useState(word);
+	const [charCount, setCharCount] = useState(word.length);
+	const target = useRef(word);
+	const phase = useRef<"idle" | "deleting" | "typing">("idle");
+	const timer = useRef<ReturnType<typeof setTimeout>>(null);
 
 	useEffect(() => {
-		if (word === display) return;
-		setAnimating(true);
-		const t = setTimeout(() => {
-			setDisplay(word);
-			setAnimating(false);
-		}, 200);
-		return () => clearTimeout(t);
-	}, [word, display]);
+		if (word === target.current && phase.current === "idle") return;
+		target.current = word;
+
+		if (phase.current === "idle") {
+			phase.current = "deleting";
+			tick();
+		}
+
+		function tick() {
+			if (phase.current === "deleting") {
+				setCharCount((c) => {
+					if (c <= 0) {
+						phase.current = "typing";
+						setDisplayed(target.current);
+						timer.current = setTimeout(tick, 120);
+						return 0;
+					}
+					timer.current = setTimeout(tick, 40 + Math.random() * 30);
+					return c - 1;
+				});
+			} else if (phase.current === "typing") {
+				setCharCount((c) => {
+					if (c >= target.current.length) {
+						phase.current = "idle";
+						return target.current.length;
+					}
+					timer.current = setTimeout(tick, 55 + Math.random() * 40);
+					return c + 1;
+				});
+			}
+		}
+
+		return () => {
+			if (timer.current) clearTimeout(timer.current);
+		};
+	}, [word]);
+
+	const visible = displayed.slice(0, charCount);
+	const showCursor = phase.current !== "idle";
 
 	return (
-		<span
-			className="inline-block transition-all duration-200"
-			style={{
-				color: hue,
-				opacity: animating ? 0 : 1,
-				transform: animating ? "translateY(8px)" : "translateY(0)",
-				filter: animating ? "blur(2px)" : "blur(0)",
-			}}
-		>
-			{display}
+		<span className="inline" style={{ color: hue }}>
+			{visible}
+			<span
+				className="inline-block w-[0.05em] align-baseline transition-opacity duration-100"
+				style={{
+					height: "0.85em",
+					background: hue,
+					opacity: showCursor ? 1 : 0,
+					marginLeft: "1px",
+				}}
+			/>
 		</span>
 	);
 }
@@ -328,29 +341,18 @@ const ALL_WORDS = RAIL_AGENTS.map((a) => a.word);
 export function HeroBlock() {
 	const [agent, setAgent] = useState<HeroAgent>("hermes");
 	const [wordIndex, setWordIndex] = useState(0);
-	const [glitching, setGlitching] = useState(false);
-	const prevWord = useRef(wordIndex);
 	const activeWord = ALL_WORDS[wordIndex];
 	const activeRail = RAIL_AGENTS[wordIndex];
 	const isCursor = activeRail.id === null;
 	const capabilities = isCursor ? ["IDE", "rules", "MCP", "agents"] : AGENT_CAPABILITIES[agent];
 	const hue = isCursor ? "var(--ret-purple)" : AGENT_HUE[agent];
-	const Scene = isCursor ? WireframeDashboardScene : AGENT_SCENE[agent];
+	const orbitAgent = isCursor ? null : agent;
 
 	function selectRailIndex(idx: number) {
 		setWordIndex(idx);
 		const rail = RAIL_AGENTS[idx];
 		if (rail.id) setAgent(rail.id);
 	}
-
-	useEffect(() => {
-		if (prevWord.current !== wordIndex) {
-			prevWord.current = wordIndex;
-			setGlitching(true);
-			const t = setTimeout(() => setGlitching(false), 400);
-			return () => clearTimeout(t);
-		}
-	}, [wordIndex]);
 
 	/* Auto-cycle through all 5 (including Cursor) every 6s */
 	useEffect(() => {
@@ -372,19 +374,33 @@ export function HeroBlock() {
 				href="https://dedaluslabs.ai"
 				target="_blank"
 				rel="noopener noreferrer"
-				className="group/banner flex items-center gap-3 border-b border-[var(--ret-border)] bg-[var(--ret-bg-soft)] px-5 py-2 transition-colors hover:bg-[var(--ret-surface)]"
+				className="bg-[var(--ret-bg-soft)] group/banner relative flex items-center gap-3 border-b border-[var(--ret-border)] px-5 py-2.5 transition-colors hover:bg-[var(--ret-surface)]"
 			>
-				<Logo mark="dedalus" size={14} />
+				{/* Corner crosshair marks */}
+				<span className="pointer-events-none absolute left-1.5 top-1.5 h-1.5 w-1.5 border-l border-t border-[var(--ret-cross)] opacity-40" />
+				<span className="pointer-events-none absolute bottom-1.5 left-1.5 h-1.5 w-1.5 border-b border-l border-[var(--ret-cross)] opacity-40" />
+				<span className="pointer-events-none absolute right-1.5 top-1.5 h-1.5 w-1.5 border-r border-t border-[var(--ret-cross)] opacity-40" />
+				<span className="pointer-events-none absolute bottom-1.5 right-1.5 h-1.5 w-1.5 border-b border-r border-[var(--ret-cross)] opacity-40" />
+
+				<svg viewBox="0 0 16 16" fill="none" className="h-3.5 w-3.5 text-[var(--ret-purple)]" aria-hidden>
+					<path d="M8 1v4M8 11v4M1 8h4M11 8h4M3.5 3.5l2.5 2.5M10 10l2.5 2.5M12.5 3.5L10 6M6 10l-2.5 2.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+					<circle cx="8" cy="8" r="2" fill="currentColor" opacity="0.5" />
+				</svg>
 				<span className="text-[9px] font-medium uppercase tracking-[0.18em] text-[var(--ret-text-muted)]">
-					Dedalus Machines
+					Powered by <span className="text-[var(--ret-purple)]">Dedalus Machines</span>
 				</span>
-				<span className="hidden text-[9px] text-[var(--ret-text-muted)] sm:inline">·</span>
+
+				<span className="inline-flex items-center border border-[var(--ret-green)]/25 bg-[var(--ret-green)]/8 px-1.5 py-px text-[7px] uppercase tracking-[0.2em] text-[var(--ret-green)]">
+					Alpha
+				</span>
+
 				<span className="hidden text-[10px] text-[var(--ret-text-dim)] sm:inline">
-					Now in alpha — persistent VMs for AI agents
+					Persistent VMs for AI agents
 				</span>
-				<span className="ml-auto flex items-center gap-1 text-[9px] uppercase tracking-[0.18em] text-[var(--ret-purple)] opacity-70 transition-opacity group-hover/banner:opacity-100">
+
+				<span className="ml-auto flex items-center gap-1.5 text-[9px] uppercase tracking-[0.18em] text-[var(--ret-purple)] opacity-60 transition-opacity group-hover/banner:opacity-100">
 					dedaluslabs.ai
-					<IconArrowRight className="h-2.5 w-2.5" />
+					<IconArrowRight className="h-2.5 w-2.5 transition-transform group-hover/banner:translate-x-0.5" />
 				</span>
 			</a>
 
@@ -392,7 +408,7 @@ export function HeroBlock() {
 			<div className="grid grid-cols-4 auto-rows-auto md:grid-cols-[4.5rem_repeat(7,1fr)_4.5rem]">
 
 				{/* ═══ Row 1: Automation tools | Kicker + empty ═══ */}
-				<Cell action="loading cron drivers..." agent={agent} hue={hue} className="hidden !border-b-0 md:flex md:items-center md:justify-center" hoverVisual={<HoverGlow color={hue} />}>
+				<Cell action="" agent={agent} hue={hue} className="hidden !border-b-0 md:flex md:items-center md:justify-center" hoverVisual={<HoverGlow color={hue} />} noLabel>
 					<div className="flex flex-col items-center gap-1.5 px-3 py-3">
 						<span className="text-[7px] uppercase tracking-[0.2em] text-[var(--ret-text-muted)]">Automate</span>
 						<div className="grid grid-cols-2 gap-1">
@@ -413,14 +429,14 @@ export function HeroBlock() {
 				<Cell action="git push origin main" agent={agent} hue={hue} className="hidden !border-b-0 md:block" hoverVisual={<HoverHatch color={hue} />} cellAgent={CELL_AGENTS[2]} toolIcon="shell">
 					<div className="h-full p-1.5">
 						<div className="relative h-full overflow-hidden rounded-lg border border-[var(--ret-border)] bg-[var(--ret-bg)]">
-							<div className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-8 dark:opacity-5" style={{ backgroundImage: "url(/brand/bg-cloud-lines.png)" }} />
+							<div className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-0 dark:opacity-20" style={{ backgroundImage: "url(/brand/bg-nyx-lines.png)" }} />
 						</div>
 					</div>
 				</Cell>
 				<Cell action="reviewing PR #412" agent={agent} hue={hue} className="hidden !border-b-0 md:block" hoverVisual={<HoverPulseGrid color={hue} />} cellAgent={CELL_AGENTS[3]} serviceIcon="github">
 					<div className="h-full p-1.5">
 						<div className="relative h-full overflow-hidden rounded-lg border border-[var(--ret-border)] bg-[var(--ret-bg)]">
-							<div className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-8 dark:opacity-5" style={{ backgroundImage: "url(/brand/bg-cloud-lines.png)" }} />
+							<div className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-0 dark:opacity-20" style={{ backgroundImage: "url(/brand/bg-nyx-lines.png)" }} />
 						</div>
 					</div>
 				</Cell>
@@ -439,7 +455,7 @@ export function HeroBlock() {
 				<Cell action="" agent={agent} hue={hue} className="hidden !border-b-0 !border-r-0 md:block" hoverVisual={<HoverScene Scene={WireframeLoadoutScene} />} noLabel>
 					<div className="h-full p-1.5">
 						<div className="relative h-full overflow-hidden rounded-lg border border-[var(--ret-border)] bg-[var(--ret-bg)]">
-							<div className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-8 dark:opacity-5" style={{ backgroundImage: "url(/brand/bg-cloud-lines.png)" }} />
+							<div className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-0 dark:opacity-20" style={{ backgroundImage: "url(/brand/bg-nyx-lines.png)" }} />
 						</div>
 					</div>
 				</Cell>
@@ -489,14 +505,22 @@ export function HeroBlock() {
 					/>
 					<div className="h-full p-1.5">
 						<div className="h-full rounded-lg border border-[var(--ret-border)] bg-[var(--ret-bg)]">
-							<div className="px-6 py-8 md:px-10 md:py-14">
+							<div className="py-8 md:py-14">
 								<h1 className="ret-display text-[clamp(2rem,5.5vw,4.5rem)] leading-[0.95] tracking-tight">
-									<span className="block whitespace-nowrap">
-										<AnimatedWord word={activeWord} hue={hue} />
-										{" "}Machines
+									<span className="flex items-center whitespace-nowrap">
+										<span className="h-px w-4 shrink-0 border-t border-dashed border-[var(--ret-border)] md:w-8" />
+										<span className="px-3">
+											<AnimatedWord word={activeWord} hue={hue} />
+											{" "}Machines
+										</span>
+										<span className="h-px flex-1 border-t border-dashed border-[var(--ret-border)]" />
 									</span>
-									<span className="block text-[var(--ret-text-muted)]">
-										for your Agent.
+									<span className="flex items-center">
+										<span className="h-px w-4 shrink-0 border-t border-dashed border-[var(--ret-border)] md:w-8" />
+										<span className="px-3 text-[var(--ret-text-muted)]">
+											for your Agent.
+										</span>
+										<span className="h-px flex-1 border-t border-dashed border-[var(--ret-border)]" />
 									</span>
 								</h1>
 							</div>
@@ -519,45 +543,7 @@ export function HeroBlock() {
 				>
 					<div className="h-full p-1.5">
 						<div className="relative h-full overflow-hidden rounded-lg border border-[var(--ret-border)] bg-[var(--ret-bg-soft)]">
-							<Scene className="h-full w-full" />
-							{/* Glitch overlay */}
-							<div
-								className="pointer-events-none absolute inset-0 z-10 transition-opacity duration-100"
-								style={{ opacity: glitching ? 1 : 0 }}
-							>
-								<div
-									className="absolute inset-0"
-									style={{
-										backgroundImage: `repeating-linear-gradient(0deg, transparent 0 2px, ${hue}15 2px 3px)`,
-										backgroundSize: "100% 3px",
-									}}
-								/>
-								<div
-									className="absolute inset-0"
-									style={{
-										background: `linear-gradient(180deg, transparent 20%, ${hue}20 22%, transparent 24%, transparent 55%, ${hue}18 57%, transparent 59%, transparent 80%, ${hue}15 82%, transparent 84%)`,
-									}}
-								/>
-								<div
-									className="absolute left-0 right-0 h-px"
-									style={{ top: "30%", background: hue, boxShadow: `0 0 8px ${hue}` }}
-								/>
-								<div
-									className="absolute left-0 right-0 h-px"
-									style={{ top: "65%", background: hue, opacity: 0.6, boxShadow: `0 0 4px ${hue}` }}
-								/>
-								<div
-									className="absolute h-3 w-full"
-									style={{
-										top: "45%",
-										background: `repeating-linear-gradient(90deg, ${hue}10 0 4px, transparent 4px 8px, ${hue}08 8px 10px, transparent 10px 16px)`,
-									}}
-								/>
-								<div
-									className="absolute inset-0 hero-glitch-flash"
-									style={{ background: hue }}
-								/>
-							</div>
+							<HeroOrbitScene className="h-full w-full" activeAgent={orbitAgent} />
 							<span className="pointer-events-none absolute left-2 top-2 h-2 w-2 border-l border-t border-[var(--ret-cross)]" />
 							<span className="pointer-events-none absolute right-2 top-2 h-2 w-2 border-r border-t border-[var(--ret-cross)]" />
 							<span className="pointer-events-none absolute bottom-2 left-2 h-2 w-2 border-b border-l border-[var(--ret-cross)]" />
@@ -572,7 +558,7 @@ export function HeroBlock() {
 				<Cell action="" agent={agent} hue={hue} className="hidden md:block !border-t-0 !border-r-0" hoverVisual={<HoverScene Scene={WireframeHostsScene} />} noLabel>
 					<div className="h-full p-1.5">
 						<div className="relative h-full overflow-hidden rounded-lg border border-[var(--ret-border)] bg-[var(--ret-bg)]">
-							<div className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-8 dark:opacity-5" style={{ backgroundImage: "url(/brand/bg-cloud-lines.png)" }} />
+							<div className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-0 dark:opacity-20" style={{ backgroundImage: "url(/brand/bg-nyx-lines.png)" }} />
 						</div>
 					</div>
 				</Cell>
@@ -583,7 +569,7 @@ export function HeroBlock() {
 				</Cell>
 
 				{/* ═══ Row 4: Code tools | Description + spec cells ═══ */}
-				<Cell action="connecting dev tools..." agent={agent} hue={hue} className="hidden md:flex md:items-center md:justify-center" hoverVisual={<HoverHatch color={hue} angle={135} />}>
+				<Cell action="" agent={agent} hue={hue} className="hidden md:flex md:items-center md:justify-center" hoverVisual={<HoverHatch color={hue} angle={135} />} noLabel>
 					<div className="flex flex-col items-center gap-1.5 px-3 py-3">
 						<span className="text-[7px] uppercase tracking-[0.2em] text-[var(--ret-text-muted)]">Code</span>
 						<div className="grid grid-cols-2 gap-1">
@@ -597,7 +583,7 @@ export function HeroBlock() {
 				<Cell action="analyzing value proposition..." agent={agent} hue={hue} className="col-span-4" hoverVisual={<HoverGradient color={hue} />}>
 					<div className="px-5 py-5">
 						<p className="max-w-[56ch] text-[15px] leading-relaxed text-[var(--ret-text-dim)]">
-							One stateful microVM per account.{" "}
+							One stateful VM per account.{" "}
 							<strong className="text-[var(--ret-text)]">
 								Boot in 30 seconds, sleep on idle, wake on the first prompt.
 							</strong>
@@ -607,7 +593,7 @@ export function HeroBlock() {
 				<Cell action="provisioning VM..." agent={agent} hue={hue} className="hidden md:block" hoverVisual={<HoverGlow color={hue} />}>
 					<div className="flex h-full flex-col items-center justify-center px-2 py-4">
 						<span className="text-[7px] uppercase tracking-[0.2em] text-[var(--ret-text-muted)]">RUNTIME</span>
-						<span className="mt-1 text-[13px] font-medium tabular-nums text-[var(--ret-text-dim)]">microVM</span>
+						<span className="mt-1 text-[13px] font-medium tabular-nums text-[var(--ret-text-dim)]">Linux VM</span>
 					</div>
 				</Cell>
 				<Cell action="cold start benchmark..." agent={agent} hue={hue} className="hidden md:block" hoverVisual={<HoverPulseGrid color={hue} />}>
@@ -629,7 +615,7 @@ export function HeroBlock() {
 				</Cell>
 
 				{/* ═══ Row 5: Data tools | Capabilities + empty ═══ */}
-				<Cell action="mounting data stores..." agent={agent} hue={hue} className="hidden md:flex md:items-center md:justify-center" hoverVisual={<HoverGlow color={hue} />}>
+				<Cell action="" agent={agent} hue={hue} className="hidden md:flex md:items-center md:justify-center" hoverVisual={<HoverGlow color={hue} />} noLabel>
 					<div className="flex flex-col items-center gap-1.5 px-3 py-3">
 						<span className="text-[7px] uppercase tracking-[0.2em] text-[var(--ret-text-muted)]">Data</span>
 						<div className="grid grid-cols-2 gap-1">
@@ -657,14 +643,14 @@ export function HeroBlock() {
 				<Cell action="screenshot captured" agent={agent} hue={hue} hoverVisual={<HoverGlow color={hue} />} cellAgent={CELL_AGENTS[1]} toolIcon="vision">
 					<div className="h-full p-1.5">
 						<div className="relative h-full overflow-hidden rounded-lg border border-[var(--ret-border)] bg-[var(--ret-bg)]">
-							<div className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-8 dark:opacity-5" style={{ backgroundImage: "url(/brand/bg-cloud-lines.png)" }} />
+							<div className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-0 dark:opacity-20" style={{ backgroundImage: "url(/brand/bg-nyx-lines.png)" }} />
 						</div>
 					</div>
 				</Cell>
 				<Cell action="navigating to form" agent={agent} hue={hue} className="hidden md:block" hoverVisual={<HoverScene Scene={WireframeHostsScene} />} cellAgent={CELL_AGENTS[1]} toolIcon="browser">
 					<div className="h-full p-1.5">
 						<div className="relative h-full overflow-hidden rounded-lg border border-[var(--ret-border)] bg-[var(--ret-bg)]">
-							<div className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-8 dark:opacity-5" style={{ backgroundImage: "url(/brand/bg-cloud-lines.png)" }} />
+							<div className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-0 dark:opacity-20" style={{ backgroundImage: "url(/brand/bg-nyx-lines.png)" }} />
 						</div>
 					</div>
 				</Cell>
@@ -673,29 +659,23 @@ export function HeroBlock() {
 						<div className="h-full rounded-lg border border-[var(--ret-border)] bg-[var(--ret-bg-mid)]" />
 					</div>
 				</Cell>
-				<Cell action="cron: in 12m" agent={agent} hue={hue} className="hidden md:block" hoverVisual={<HoverScene Scene={WireframeEnvironmentScene} />} cellAgent={CELL_AGENTS[0]} toolIcon="schedule">
-					<div className="h-full p-1.5">
+			<Cell action="cron: in 12m" agent={agent} hue={hue} className="hidden md:block" hoverVisual={<HoverScene Scene={WireframeEnvironmentScene} />} cellAgent={CELL_AGENTS[0]} toolIcon="schedule">
+				<div className="h-full p-1.5">
 						<div className="relative h-full overflow-hidden rounded-lg border border-[var(--ret-border)] bg-[var(--ret-bg-soft)]">
-							<div
-								className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-15 dark:opacity-10"
-								style={{ backgroundImage: "url(/brand/bg-cloud-lines.png)" }}
-							/>
+							<div className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-0 dark:opacity-20" style={{ backgroundImage: "url(/brand/bg-nyx-lines.png)" }} />
 						</div>
 					</div>
 				</Cell>
 				<Cell action="" agent={agent} hue={hue} className="hidden !border-r-0 md:block" hoverVisual={<HoverScene Scene={WireframeLoadoutScene} />} noLabel>
 					<div className="h-full p-1.5">
 						<div className="relative h-full overflow-hidden rounded-lg border border-[var(--ret-border)] bg-[var(--ret-bg-soft)]">
-							<div
-								className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-15 dark:opacity-10"
-								style={{ backgroundImage: "url(/brand/bg-cloud-lines.png)" }}
-							/>
+							<div className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-0 dark:opacity-20" style={{ backgroundImage: "url(/brand/bg-nyx-lines.png)" }} />
 						</div>
 					</div>
 				</Cell>
 
 				{/* ═══ Row 6: Observe tools | CTAs + empty ═══ */}
-				<Cell action="wiring observability..." agent={agent} hue={hue} className="hidden !border-b-0 md:flex md:items-center md:justify-center" hoverVisual={<HoverPulseGrid color={hue} />}>
+				<Cell action="" agent={agent} hue={hue} className="hidden !border-b-0 md:flex md:items-center md:justify-center" hoverVisual={<HoverPulseGrid color={hue} />} noLabel>
 					<div className="flex flex-col items-center gap-1.5 px-3 py-3">
 						<span className="text-[7px] uppercase tracking-[0.2em] text-[var(--ret-text-muted)]">Observe</span>
 						<div className="grid grid-cols-2 gap-1">
@@ -735,14 +715,14 @@ export function HeroBlock() {
 				<Cell action="sandbox: pass" agent={agent} hue={hue} className="!border-b-0" hoverVisual={<HoverGradient color={hue} />} cellAgent={CELL_AGENTS[3]} toolIcon="shell">
 					<div className="h-full p-1.5">
 						<div className="relative h-full overflow-hidden rounded-lg border border-[var(--ret-border)] bg-[var(--ret-bg)]">
-							<div className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-8 dark:opacity-5" style={{ backgroundImage: "url(/brand/bg-cloud-lines.png)" }} />
+							<div className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-0 dark:opacity-20" style={{ backgroundImage: "url(/brand/bg-nyx-lines.png)" }} />
 						</div>
 					</div>
 				</Cell>
 				<Cell action="editing fixtures" agent={agent} hue={hue} className="hidden !border-b-0 md:block" hoverVisual={<HoverPulseGrid color={hue} />} cellAgent={CELL_AGENTS[2]} toolIcon="filesystem">
 					<div className="h-full p-1.5">
 						<div className="relative h-full overflow-hidden rounded-lg border border-[var(--ret-border)] bg-[var(--ret-bg)]">
-							<div className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-8 dark:opacity-5" style={{ backgroundImage: "url(/brand/bg-cloud-lines.png)" }} />
+							<div className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-0 dark:opacity-20" style={{ backgroundImage: "url(/brand/bg-nyx-lines.png)" }} />
 						</div>
 					</div>
 				</Cell>
@@ -751,27 +731,17 @@ export function HeroBlock() {
 						<div className="h-full rounded-lg border border-[var(--ret-border)] bg-[var(--ret-bg-mid)]" />
 					</div>
 				</Cell>
-				<Cell action="applying rules" agent={agent} hue={hue} className="hidden !border-b-0 md:block" hoverVisual={<HoverGradient color={hue} />} cellAgent={CELL_AGENTS[4]} toolIcon="skill">
-					<div className="h-full p-1.5">
+			<Cell action="applying rules" agent={agent} hue={hue} className="hidden !border-b-0 md:block" hoverVisual={<HoverGradient color={hue} />} cellAgent={CELL_AGENTS[4]} toolIcon="skill">
+				<div className="h-full p-1.5">
 						<div className="relative h-full overflow-hidden rounded-lg border border-[var(--ret-border)] bg-[var(--ret-bg-soft)]">
-							<div
-								className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-15 dark:opacity-10"
-								style={{ backgroundImage: "url(/brand/bg-cloud-lines.png)" }}
-							/>
+							<div className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-0 dark:opacity-20" style={{ backgroundImage: "url(/brand/bg-nyx-lines.png)" }} />
 						</div>
 					</div>
 				</Cell>
 				<Cell action="" agent={agent} hue={hue} className="hidden !border-b-0 !border-r-0 md:block" hoverVisual={<HoverScene Scene={WireframeHostsScene} />} noLabel>
 					<div className="h-full p-1.5">
 						<div className="relative h-full overflow-hidden rounded-lg border border-[var(--ret-border)] bg-[var(--ret-bg-soft)]">
-							<div
-								className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-15 dark:opacity-10"
-								style={{ backgroundImage: "url(/brand/bg-cloud-lines.png)" }}
-							/>
-							<div
-								className="absolute inset-0 hidden bg-cover bg-center bg-no-repeat opacity-10 dark:block"
-								style={{ backgroundImage: "url(/brand/bg-nyx-lines.png)" }}
-							/>
+							<div className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-0 dark:opacity-20" style={{ backgroundImage: "url(/brand/bg-nyx-lines.png)" }} />
 						</div>
 					</div>
 				</Cell>

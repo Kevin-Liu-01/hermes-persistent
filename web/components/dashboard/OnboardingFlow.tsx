@@ -85,7 +85,7 @@ const PROVIDERS_META: Record<
 	dedalus: {
 		name: "Dedalus Machines",
 		tagline:
-			"Firecracker microVMs with sleep/wake, persistent /home/machine, cloudflared previews. The original.",
+			"Linux VMs with sleep/wake, persistent disk, cloudflared previews. The original.",
 		keyLabel: "Dedalus API key",
 		keyPlaceholder: "dsk-live-...",
 		keyHint: "Get one at dedaluslabs.ai/dashboard/api-keys",
@@ -105,7 +105,7 @@ const PROVIDERS_META: Record<
 	fly: {
 		name: "Fly Machines",
 		tagline:
-			"Fly.io persistent microVMs with volumes. Alternative host for durable Hermes or OpenClaw machines.",
+			"Fly.io persistent VMs with volumes. Alternative host for durable Hermes or OpenClaw machines.",
 		keyLabel: "Fly.io token",
 		keyPlaceholder: "fly_pat_... or FlyV1 ...",
 		keyHint: "Create a token at fly.io/dashboard/-/tokens",
@@ -1010,7 +1010,7 @@ function ProviderPickStep({
 					Pick where it runs
 				</h1>
 				<p className="mt-1 max-w-[60ch] text-[13px] text-[var(--ret-text-dim)]">
-					The infrastructure provider hosting your agent&rsquo;s microVM.
+					The infrastructure provider hosting your agent&rsquo;s VM.
 					Dedalus is the default and fully wired. Vercel Sandbox and Fly
 					Machines are available as alternative hosts.
 				</p>

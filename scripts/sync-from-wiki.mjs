@@ -52,7 +52,7 @@ const SOURCES = [
 ];
 
 /**
- * Skills that physically can't run on the Hermes Linux microVM and
+ * Skills that physically can't run on the Hermes Linux VM and
  * shouldn't be synced. Everything else gets imported.
  */
 const DENYLIST = new Set([

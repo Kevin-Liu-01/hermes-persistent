@@ -79,7 +79,7 @@ export default async function OpengraphImage() {
 							background: COLOR.purpleGlow,
 						}}
 					>
-						stateful microvm
+						stateful vm
 					</span>
 					<span
 						style={{

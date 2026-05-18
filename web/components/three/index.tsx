@@ -51,6 +51,10 @@ const MachineWireShape = dynamic(
 	() => import("./WireframeShapes").then((m) => m.MachineWire),
 	{ ssr: false },
 );
+const HeroOrbitInner = dynamic(
+	() => import("./HeroOrbitScene").then((m) => m.HeroOrbitScene),
+	{ ssr: false },
+);
 
 type FrameProps = {
 	className?: string;
@@ -184,6 +188,23 @@ export function WireframeMachine({ className }: { className?: string }) {
 		<SceneFrame className={className}>
 			<SceneCanvas camera={{ position: [0, 0, 4], fov: 34 }}>
 				<MachineWireShape />
+			</SceneCanvas>
+			<CrossOverlay />
+		</SceneFrame>
+	);
+}
+
+export function HeroOrbit({
+	className,
+	activeAgent,
+}: {
+	className?: string;
+	activeAgent: string | null;
+}) {
+	return (
+		<SceneFrame className={className}>
+			<SceneCanvas camera={{ position: [0, 0.2, 4.2], fov: 34 }}>
+				<HeroOrbitInner activeAgent={activeAgent} />
 			</SceneCanvas>
 			<CrossOverlay />
 		</SceneFrame>
