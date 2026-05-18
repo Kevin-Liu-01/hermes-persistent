@@ -72,43 +72,66 @@ const AGENT_LABEL: Record<HeroAgent, string> = {
 	codex: "Codex CLI",
 };
 
-/* ── Animated heading word (typewriter delete + retype) ── */
+/* ── Animated heading word (typewriter delete + retype with per-char animation) ── */
+
+type TypePhase = "idle" | "deleting" | "pause" | "typing";
 
 function AnimatedWord({ word, hue }: { word: string; hue: string }) {
 	const [displayed, setDisplayed] = useState(word);
 	const [charCount, setCharCount] = useState(word.length);
+	const [phase, setPhase] = useState<TypePhase>("idle");
+	const [charTimestamps, setCharTimestamps] = useState<number[]>(
+		() => Array.from({ length: word.length }, () => 0),
+	);
 	const target = useRef(word);
-	const phase = useRef<"idle" | "deleting" | "typing">("idle");
 	const timer = useRef<ReturnType<typeof setTimeout>>(null);
+	const phaseRef = useRef<TypePhase>("idle");
 
 	useEffect(() => {
-		if (word === target.current && phase.current === "idle") return;
+		if (word === target.current && phaseRef.current === "idle") return;
 		target.current = word;
 
-		if (phase.current === "idle") {
-			phase.current = "deleting";
+		if (phaseRef.current === "idle") {
+			phaseRef.current = "deleting";
+			setPhase("deleting");
 			tick();
 		}
 
 		function tick() {
-			if (phase.current === "deleting") {
+			if (phaseRef.current === "deleting") {
 				setCharCount((c) => {
 					if (c <= 0) {
-						phase.current = "typing";
+						phaseRef.current = "pause";
+						setPhase("pause");
 						setDisplayed(target.current);
-						timer.current = setTimeout(tick, 120);
+						timer.current = setTimeout(() => {
+							phaseRef.current = "typing";
+							setPhase("typing");
+							setCharTimestamps([]);
+							tick();
+						}, 280);
 						return 0;
 					}
-					timer.current = setTimeout(tick, 40 + Math.random() * 30);
+					const speed = 30 + Math.max(0, c - 2) * 6;
+					timer.current = setTimeout(tick, speed);
 					return c - 1;
 				});
-			} else if (phase.current === "typing") {
+			} else if (phaseRef.current === "typing") {
 				setCharCount((c) => {
 					if (c >= target.current.length) {
-						phase.current = "idle";
+						phaseRef.current = "idle";
+						setPhase("idle");
 						return target.current.length;
 					}
-					timer.current = setTimeout(tick, 55 + Math.random() * 40);
+					setCharTimestamps((ts) => [...ts, performance.now()]);
+					const progress = c / Math.max(target.current.length - 1, 1);
+					const base = 70;
+					const ease = progress < 0.2
+						? base + (1 - progress / 0.2) * 60
+						: progress > 0.85
+							? base + ((progress - 0.85) / 0.15) * 40
+							: base;
+					timer.current = setTimeout(tick, ease + Math.random() * 35);
 					return c + 1;
 				});
 			}
@@ -119,19 +142,37 @@ function AnimatedWord({ word, hue }: { word: string; hue: string }) {
 		};
 	}, [word]);
 
-	const visible = displayed.slice(0, charCount);
-	const showCursor = phase.current !== "idle";
+	const now = typeof performance !== "undefined" ? performance.now() : 0;
 
 	return (
 		<span className="inline" style={{ color: hue }}>
-			{visible}
+			{displayed.slice(0, charCount).split("").map((ch, i) => {
+				const ts = charTimestamps[i];
+				const age = ts ? now - ts : 1000;
+				const entering = phase === "typing" && age < 200;
+				return (
+					<span
+						key={`${displayed}-${i}`}
+						style={{
+							display: "inline-block",
+							transition: "transform 0.25s cubic-bezier(0.16,1,0.3,1), opacity 0.2s ease-out",
+							transform: entering ? "translateY(0.06em)" : "translateY(0)",
+							opacity: entering ? 0.6 : 1,
+							whiteSpace: ch === " " ? "pre" : undefined,
+						}}
+					>
+						{ch}
+					</span>
+				);
+			})}
 			<span
-				className="inline-block w-[0.05em] align-baseline transition-opacity duration-100"
+				className="inline-block w-[0.05em] align-baseline"
 				style={{
 					height: "0.85em",
 					background: hue,
-					opacity: showCursor ? 1 : 0,
 					marginLeft: "1px",
+					opacity: phase === "idle" ? 0 : 1,
+					animation: phase === "pause" ? "ret-caret 1s steps(1) infinite" : "none",
 				}}
 			/>
 		</span>
@@ -391,7 +432,7 @@ export function HeroBlock() {
 				</span>
 
 				<span className="inline-flex items-center border border-[var(--ret-green)]/25 bg-[var(--ret-green)]/8 px-1.5 py-px text-[7px] uppercase tracking-[0.2em] text-[var(--ret-green)]">
-					Alpha
+					BETA
 				</span>
 
 				<span className="hidden text-[10px] text-[var(--ret-text-dim)] sm:inline">

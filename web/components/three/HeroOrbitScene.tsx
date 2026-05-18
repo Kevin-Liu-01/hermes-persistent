@@ -17,11 +17,11 @@ type StationDef = {
 };
 
 const STATIONS: StationDef[] = [
-	{ agent: "hermes", mark: "nous", tone: "currentColor", theta: 0, phi: 0.3, hue: "#7c8cf8" },
-	{ agent: "openclaw", mark: "openclaw", tone: "currentColor", theta: (Math.PI * 2) / 5, phi: 0.5, hue: "#e5443b" },
-	{ agent: "claude-code", mark: "anthropic", tone: "currentColor", theta: (Math.PI * 4) / 5, phi: 0.2, hue: "#d4a574" },
-	{ agent: "codex", mark: "openai", tone: "currentColor", theta: (Math.PI * 6) / 5, phi: 0.4, hue: "#4ae0a0" },
-	{ agent: null, mark: "cursor", tone: "currentColor", theta: (Math.PI * 8) / 5, phi: 0.35, hue: "#d2beff" },
+	{ agent: "hermes", mark: "nous", tone: "currentColor", theta: 0, phi: 0.6, hue: "#7c8cf8" },
+	{ agent: "openclaw", mark: "openclaw", tone: "currentColor", theta: (Math.PI * 2) / 5, phi: 0.8, hue: "#e5443b" },
+	{ agent: "claude-code", mark: "anthropic", tone: "currentColor", theta: (Math.PI * 4) / 5, phi: 0.5, hue: "#d4a574" },
+	{ agent: "codex", mark: "openai", tone: "currentColor", theta: (Math.PI * 6) / 5, phi: 0.7, hue: "#4ae0a0" },
+	{ agent: null, mark: "cursor", tone: "currentColor", theta: (Math.PI * 8) / 5, phi: 0.65, hue: "#d2beff" },
 ];
 
 const LOGO_ORBIT_R = 1.8;
@@ -168,22 +168,51 @@ function LogoStation({
 
 /* ── Orbital camera controller ── */
 
-const ZOOM_OUT_SCALE = 2.4;
+const ZOOM_OUT_SCALE = 2.2;
+const INTRO_DURATION = 4.0;
+const INTRO_TOTAL_SWEEP = Math.PI * 6;
+
+function cubicBezierEase(t: number): number {
+	const c = 1 - t;
+	return 1 - c * c * c;
+}
+
+function nearestStationIdx(angle: number): number {
+	const norm = ((angle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+	let best = 0;
+	let bestDist = Infinity;
+	for (let i = 0; i < STATIONS.length; i++) {
+		const sTheta = ((STATIONS[i].theta % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+		const d = Math.min(
+			Math.abs(norm - sTheta),
+			Math.PI * 2 - Math.abs(norm - sTheta),
+		);
+		if (d < bestDist) {
+			bestDist = d;
+			best = i;
+		}
+	}
+	return best;
+}
 
 function OrbitalCamera({
 	targetIdx,
 	introActive,
+	onIntroStation,
+	onIntroDone,
 }: {
 	targetIdx: number;
 	introActive: boolean;
+	onIntroStation: (idx: number) => void;
+	onIntroDone: () => void;
 }) {
 	const { camera } = useThree();
 	const targetPos = useRef(stationCameraPos(STATIONS[0]));
 	const lookAtTarget = useRef(new THREE.Vector3(...stationLogoPos(STATIONS[0])));
-	const currentLook = useRef(new THREE.Vector3(...stationLogoPos(STATIONS[0])));
-	const zoomFactor = useRef(introActive ? ZOOM_OUT_SCALE : 1);
-
-	const introAngle = useRef(0);
+	const currentLook = useRef(new THREE.Vector3(0, 0, 0));
+	const elapsed = useRef(0);
+	const lastIntroStation = useRef(-1);
+	const introDone = useRef(false);
 
 	useEffect(() => {
 		if (!introActive) {
@@ -194,15 +223,51 @@ function OrbitalCamera({
 	}, [targetIdx, introActive]);
 
 	useFrame((_, delta) => {
-		if (introActive) {
-			introAngle.current += delta * 2.5;
-			const r = CAMERA_ORBIT_R * ZOOM_OUT_SCALE;
+		if (introActive && !introDone.current) {
+			elapsed.current += delta;
+			const rawT = Math.min(elapsed.current / INTRO_DURATION, 1);
+			const easedT = cubicBezierEase(rawT);
+
+			const endCam = stationCameraPos(STATIONS[0]);
+			const [endLx, endLy, endLz] = stationLogoPos(STATIONS[0]);
+
+			const angle = INTRO_TOTAL_SWEEP * easedT;
+			const zoom = ZOOM_OUT_SCALE + (1 - ZOOM_OUT_SCALE) * easedT;
+			const r = CAMERA_ORBIT_R * zoom;
+			const yBlend = 1.6 + (endCam.y - 1.6) * easedT;
+
 			camera.position.set(
-				r * Math.sin(introAngle.current),
-				1.2,
-				r * Math.cos(introAngle.current),
+				r * Math.sin(angle),
+				yBlend,
+				r * Math.cos(angle),
 			);
-			camera.lookAt(0, 0, 0);
+
+			const lookBlend = easedT * easedT;
+			currentLook.current.set(
+				endLx * lookBlend,
+				endLy * lookBlend,
+				endLz * lookBlend,
+			);
+			camera.lookAt(currentLook.current);
+
+			const angularSpeed = (INTRO_TOTAL_SWEEP / INTRO_DURATION) * (1 - easedT) * (1 - easedT) * 3;
+			const leadOffset = angularSpeed * 0.35;
+			const nearest = nearestStationIdx(angle + leadOffset);
+			if (nearest !== lastIntroStation.current) {
+				lastIntroStation.current = nearest;
+				onIntroStation(nearest);
+			}
+
+			if (rawT >= 1) {
+				introDone.current = true;
+				onIntroStation(0);
+				onIntroDone();
+				camera.position.copy(endCam);
+				currentLook.current.set(endLx, endLy, endLz);
+				camera.lookAt(currentLook.current);
+				targetPos.current = endCam;
+				lookAtTarget.current.set(endLx, endLy, endLz);
+			}
 		} else {
 			const t = 1 - Math.exp(-LERP_SPEED * delta);
 			camera.position.lerp(targetPos.current, t);
@@ -244,45 +309,28 @@ type Props = {
 };
 
 export function HeroOrbitScene({ activeAgent }: Props) {
-	const [introIdx, setIntroIdx] = useState<number | null>(0);
 	const [introActive, setIntroActive] = useState(true);
-	const spinCount = useRef(0);
+	const [introStationIdx, setIntroStationIdx] = useState(0);
 
-	useEffect(() => {
-		let timer: ReturnType<typeof setTimeout>;
-
-		function tick() {
-			spinCount.current += 1;
-			setIntroIdx((prev) => {
-				const next = ((prev ?? 0) + 1) % STATIONS.length;
-				return next;
-			});
-
-			if (spinCount.current >= 15) {
-				setIntroIdx(null);
-				setIntroActive(false);
-				return;
-			}
-
-			const delay = 100 + spinCount.current * 22;
-			timer = setTimeout(tick, delay);
-		}
-
-		timer = setTimeout(tick, 300);
-		return () => clearTimeout(timer);
-	}, []);
-
-	const activeIdx = useMemo(() => {
-		if (introIdx !== null) return introIdx;
+	const settledIdx = useMemo(() => {
 		const idx = STATIONS.findIndex((s) => s.agent === activeAgent);
 		return idx >= 0 ? idx : 0;
-	}, [introIdx, activeAgent]);
+	}, [activeAgent]);
+
+	const activeIdx = introActive ? introStationIdx : settledIdx;
 
 	return (
 		<>
-			<OrbitalCamera targetIdx={activeIdx} introActive={introActive} />
+			<OrbitalCamera
+				targetIdx={settledIdx}
+				introActive={introActive}
+				onIntroStation={setIntroStationIdx}
+				onIntroDone={() => setIntroActive(false)}
+			/>
 			<ambientLight intensity={0.3} />
-			<GemCore />
+			<group position={[0, 0.4, 0]}>
+				<GemCore />
+			</group>
 			<OrbitalRails />
 			{STATIONS.map((s, i) => (
 				<LogoStation key={s.agent ?? "cursor"} station={s} active={i === activeIdx} />
