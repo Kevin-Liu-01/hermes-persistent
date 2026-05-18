@@ -18,6 +18,7 @@ import { fetchActiveMachineSummary } from "@/lib/dashboard/active-machine";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 120;
 
 export async function GET(): Promise<Response> {
 	const userId = await getEffectiveUserId();

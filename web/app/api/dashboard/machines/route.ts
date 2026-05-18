@@ -27,6 +27,7 @@ import {
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 120;
 
 type LiveMachine = Omit<MachineRef, "apiKey"> & {
 	hasApiKey: boolean;

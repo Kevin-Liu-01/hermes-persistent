@@ -20,6 +20,7 @@ import { getEffectiveUserId } from "@/lib/user-config/identity";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 120;
 
 const COMMAND_TIMEOUT_MS_DEFAULT = 30_000;
 const COMMAND_TIMEOUT_MS_MAX = 120_000;

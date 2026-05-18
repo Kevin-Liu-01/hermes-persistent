@@ -20,6 +20,7 @@ import type {
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 const LIST_LIMIT = 80;
 

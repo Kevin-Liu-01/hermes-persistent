@@ -29,6 +29,7 @@ import {
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 type SettingsBody = Partial<{
 	providers: ProviderCredentials;
@@ -117,8 +118,16 @@ export async function POST(request: Request): Promise<Response> {
 		patch.activeLoadoutPresetId = body.activeLoadoutPresetId;
 	}
 
-	const next = await setUserConfig(patch);
-	return Response.json({ config: toPublicConfig(next) });
+	try {
+		const next = await setUserConfig(patch);
+		return Response.json({ config: toPublicConfig(next) });
+	} catch (err) {
+		const message = err instanceof Error ? err.message : "settings save failed";
+		return Response.json(
+			{ error: "save_failed", message },
+			{ status: 502 },
+		);
+	}
 }
 
 async function readMachineSettings(): Promise<SettingsBody> {

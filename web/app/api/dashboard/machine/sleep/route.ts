@@ -16,6 +16,7 @@ import { sleepActiveMachine } from "@/lib/dashboard/active-machine";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 120;
 
 export async function POST(): Promise<Response> {
 	const userId = await getEffectiveUserId();

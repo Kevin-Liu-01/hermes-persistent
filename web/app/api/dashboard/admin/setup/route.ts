@@ -34,6 +34,7 @@ import {
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 function isAgent(value: unknown): value is AgentKind {
 	return typeof value === "string" && (AGENT_KINDS as ReadonlyArray<string>).includes(value);

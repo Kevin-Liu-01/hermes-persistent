@@ -18,6 +18,7 @@ import type {
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 const DEFAULT_N = 200;
 const MAX_N = 500;

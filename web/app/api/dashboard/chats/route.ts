@@ -26,6 +26,7 @@ import { withActiveMachine } from "@/lib/storage/machine-fs";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 export async function GET(request: Request): Promise<Response> {
 	const userId = await getEffectiveUserId();

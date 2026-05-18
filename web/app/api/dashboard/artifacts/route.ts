@@ -20,6 +20,7 @@ import { withActiveMachine } from "@/lib/storage/machine-fs";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 const MAX_BYTES = 8 * 1024 * 1024;
 
