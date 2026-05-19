@@ -883,16 +883,32 @@ export async function setUserConfigById(
 	const nextDraftSpec = patch.draftSpec ?? current.draftSpec;
 	const nextDraftModel = patch.draftModel ?? current.draftModel;
 
+	// Clerk publicMetadata has an 8KB limit. Compact large arrays in
+	// agentProfiles and loadoutPresets to ["*"] (meaning "all bundled")
+	// to stay under the cap. The dashboard resolves "*" at read time.
+	const compactProfiles = nextAgentProfiles.map((p) => ({
+		...p,
+		enabledSkills: p.enabledSkills.length > 20 ? ["*"] : p.enabledSkills,
+		enabledTools: p.enabledTools.length > 20 ? ["*"] : p.enabledTools,
+		enabledMcpServers: p.enabledMcpServers.length > 20 ? ["*"] : p.enabledMcpServers,
+	}));
+	const compactPresets = nextLoadoutPresets.map((p) => ({
+		...p,
+		enabledSkillIds: p.enabledSkillIds.length > 20 ? ["*"] : p.enabledSkillIds,
+		enabledToolIds: p.enabledToolIds.length > 20 ? ["*"] : p.enabledToolIds,
+		enabledMcpServerIds: p.enabledMcpServerIds.length > 20 ? ["*"] : p.enabledMcpServerIds,
+	}));
+
 	const nextPublic: RawPublic = {
 		...existingPublic,
 		machines: publicShape(nextMachines),
 		gatewayProfiles: publicGatewayShape(nextGatewayProfiles),
-		agentProfiles: nextAgentProfiles,
+		agentProfiles: compactProfiles,
 		environmentProfiles: publicEnvironmentShape(nextEnvironmentProfiles),
 		bootstrapPresets: nextBootstrapPresets,
 		customLoadout: nextCustomLoadout,
 		loadoutSources: nextLoadoutSources,
-		loadoutPresets: nextLoadoutPresets,
+		loadoutPresets: compactPresets,
 		activeLoadoutPresetId: nextActiveLoadoutPresetId,
 		activeMachineId: nextActive,
 		setupStep: nextStep,
