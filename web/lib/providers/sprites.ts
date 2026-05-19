@@ -147,7 +147,9 @@ export class SpritesProvider implements MachineProvider {
 			const { SpritesClient } = await import("@fly/sprites");
 			const client = new SpritesClient(this.apiKey);
 			const sprite = client.sprite(spriteName);
-			const result = await sprite.exec(`bash -lc ${JSON.stringify(command)}`);
+			// sprite.exec() splits on whitespace, breaking shell operators
+			// like && and |. Use execFile with /bin/bash -c instead.
+			const result = await sprite.execFile("/bin/bash", ["-c", command]);
 			const stdout = result.stdout ? String(result.stdout) : "";
 			const stderr = result.stderr ? String(result.stderr) : "";
 			return {
