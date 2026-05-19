@@ -265,6 +265,9 @@ export function OnboardingFlow({
 				selectedSkills,
 				selectedTools,
 				selectedMcps,
+				skills,
+				builtins,
+				mcps,
 			});
 
 			// Build provider-specific credentials payload.
@@ -1274,12 +1277,18 @@ function buildOnboardingLoadoutPatch({
 	selectedSkills,
 	selectedTools,
 	selectedMcps,
+	skills,
+	builtins,
+	mcps,
 }: {
 	config: PublicUserConfig;
 	agent: AgentKind;
 	selectedSkills: string[];
 	selectedTools: string[];
 	selectedMcps: string[];
+	skills: SkillSummary[];
+	builtins: BuiltinTool[];
+	mcps: McpServerWithBrand[];
 }) {
 	const now = new Date().toISOString();
 	const profileId = `${agent}-default`;
@@ -1291,15 +1300,26 @@ function buildOnboardingLoadoutPatch({
 		fallbackProfile?.gatewayProfileId ??
 		config.gatewayProfiles[0]?.id ??
 		"dedalus-default";
+	// Clerk publicMetadata has an 8KB limit. Sending 161 skill slugs +
+	// 30 MCP names + 23 tool names (x2 for profile + preset) blows it.
+	// Use ["*"] as a wildcard meaning "all bundled" when every item is
+	// selected. The dashboard resolves "*" to the full list at read time.
+	const allSkills = selectedSkills.length === skills.length;
+	const allTools = selectedTools.length === builtins.length;
+	const allMcps = selectedMcps.length === mcps.length;
+	const profileSkills = allSkills ? ["*"] : selectedSkills;
+	const profileTools = allTools ? ["*"] : selectedTools;
+	const profileMcps = allMcps ? ["*"] : selectedMcps;
+
 	const nextProfile: AgentProfile = {
 		id: existingProfile?.id ?? fallbackProfile?.id ?? profileId,
 		name: existingProfile?.name ?? fallbackProfile?.name ?? `${AGENT_LABEL[agent]} default`,
 		agentKind: agent,
 		gatewayProfileId,
 		model: existingProfile?.model ?? fallbackProfile?.model ?? config.draftModel,
-		enabledSkills: selectedSkills,
-		enabledTools: selectedTools,
-		enabledMcpServers: selectedMcps,
+		enabledSkills: profileSkills,
+		enabledTools: profileTools,
+		enabledMcpServers: profileMcps,
 		environmentProfileId:
 			existingProfile?.environmentProfileId ??
 			fallbackProfile?.environmentProfileId ??
@@ -1314,9 +1334,9 @@ function buildOnboardingLoadoutPatch({
 			"Skills, built-in tools, and MCP servers selected in the first-run onboarding flow.",
 		sourceIds: ["bundled-skills", "bundled-mcps", "builtin-tools"],
 		customEntryIds: [],
-		enabledSkillIds: selectedSkills,
-		enabledToolIds: selectedTools,
-		enabledMcpServerIds: selectedMcps,
+		enabledSkillIds: profileSkills,
+		enabledToolIds: profileTools,
+		enabledMcpServerIds: profileMcps,
 		createdAt:
 			config.loadoutPresets.find((preset) => preset.id === presetId)?.createdAt ??
 			now,

@@ -32,8 +32,9 @@ export async function GET(): Promise<Response> {
 		});
 	} catch (err) {
 		const message = err instanceof Error ? err.message : "unknown_error";
-		const status = /not set/.test(message) ? 404 : 502;
-		const error = status === 404 ? "not_provisioned" : "fetch_failed";
+		const isNotFound = /not set|not found|404|no active/i.test(message);
+		const status = isNotFound ? 404 : 502;
+		const error = isNotFound ? "not_provisioned" : "fetch_failed";
 		return Response.json({ error, message }, { status });
 	}
 }
