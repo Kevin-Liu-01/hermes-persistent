@@ -289,7 +289,7 @@ function commandFor(
 		case "start-gateway":
 			if (agent === "openclaw") return startOpenClaw(p);
 			if (agent === "claude-code" || agent === "codex") return null;
-			return startHermes(p);
+			return startHermes(p, isE2B);
 		case "install-closed-loop-tools":
 			return installClosedLoopTools(p, isE2B);
 	}
@@ -413,7 +413,23 @@ function machineSettingsJson(machine: MachineRef, config: UserConfig): string {
 	return JSON.stringify(settings, null, 2);
 }
 
-function startHermes(p: BootstrapPaths): string {
+function startHermes(p: BootstrapPaths, isE2B = false): string {
+	if (isE2B) {
+		// E2B: simpler launch without setsid (may not be available).
+		// Background the gateway directly and check port binding.
+		return [
+			"set -e",
+			hermesEnv(p),
+			`source ${p.HERMES_HOME}/.env`,
+			`ps -eo pid,cmd 2>/dev/null | awk '/hermes gateway/ && !/awk/ {print $1}' | xargs -r kill 2>/dev/null || true`,
+			"sleep 1",
+			`mkdir -p ${p.MACHINE_HOME}/logs/services`,
+			`nohup hermes gateway >> ${p.HERMES_HOME}/logs/gateway.log 2>&1 &`,
+			"sleep 15",
+			`ss -tlnp 2>/dev/null | grep ':${HERMES_PORT}' || (tail -20 ${p.HERMES_HOME}/logs/gateway.log && exit 1)`,
+			`echo gateway:${HERMES_PORT}`,
+		].join(" && ");
+	}
 	const script = [
 		"#!/usr/bin/env bash",
 		"set -euo pipefail",
