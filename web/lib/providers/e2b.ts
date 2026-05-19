@@ -12,8 +12,6 @@
  *   anything else -> unknown
  */
 
-import { Sandbox } from "e2b";
-
 import {
 	MachineProviderError,
 	type ExecOptions,
@@ -25,6 +23,11 @@ import {
 	type ProvisionInput,
 	type ProvisionResult,
 } from "./types";
+
+async function getSandbox() {
+	const { Sandbox } = await import("e2b");
+	return Sandbox;
+}
 
 export type E2BCreds = {
 	apiKey: string;
@@ -83,6 +86,7 @@ export class E2BProvider implements MachineProvider {
 
 	async provision(input: ProvisionInput): Promise<ProvisionResult> {
 		try {
+			const Sandbox = await getSandbox();
 			const sandbox = await Sandbox.create({
 				apiKey: this.apiKey,
 				timeoutMs: 3_600_000,
@@ -114,6 +118,7 @@ export class E2BProvider implements MachineProvider {
 
 	async state(machineId: string): Promise<ProviderMachineSummary> {
 		try {
+			const Sandbox = await getSandbox();
 			const info = await Sandbox.getFullInfo(machineId, { apiKey: this.apiKey });
 			return {
 				id: machineId,
@@ -138,6 +143,7 @@ export class E2BProvider implements MachineProvider {
 
 	async wake(machineId: string): Promise<ProviderMachineSummary> {
 		try {
+			const Sandbox = await getSandbox();
 			await Sandbox.connect(machineId, { apiKey: this.apiKey });
 			return this.state(machineId);
 		} catch (err) {
@@ -151,6 +157,7 @@ export class E2BProvider implements MachineProvider {
 
 	async sleep(machineId: string): Promise<ProviderMachineSummary> {
 		try {
+			const Sandbox = await getSandbox();
 			await Sandbox.betaPause(machineId, { apiKey: this.apiKey });
 			return this.state(machineId);
 		} catch (err) {
@@ -164,6 +171,7 @@ export class E2BProvider implements MachineProvider {
 
 	async destroy(machineId: string): Promise<void> {
 		try {
+			const Sandbox = await getSandbox();
 			await Sandbox.kill(machineId, { apiKey: this.apiKey });
 		} catch (err) {
 			throw new MachineProviderError(
@@ -180,6 +188,7 @@ export class E2BProvider implements MachineProvider {
 		options?: ExecOptions,
 	): Promise<ExecResult> {
 		try {
+			const Sandbox = await getSandbox();
 			const sandbox = await Sandbox.connect(machineId, { apiKey: this.apiKey });
 			const result = await sandbox.commands.run(`bash -lc ${JSON.stringify(command)}`, {
 				timeoutMs: options?.timeoutMs ?? 30_000,
@@ -200,6 +209,7 @@ export class E2BProvider implements MachineProvider {
 
 	async getPublicUrl(sandboxId: string, port: number): Promise<string> {
 		try {
+			const Sandbox = await getSandbox();
 			const sandbox = await Sandbox.connect(sandboxId, { apiKey: this.apiKey });
 			return `https://${sandbox.getHost(port)}`;
 		} catch (err) {

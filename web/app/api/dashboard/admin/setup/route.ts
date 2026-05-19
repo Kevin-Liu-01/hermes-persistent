@@ -65,6 +65,7 @@ function asSpec(value: unknown): MachineSpec | null {
 
 type CredsBody = {
 	dedalus?: { apiKey?: string };
+	e2b?: { apiKey?: string };
 	sprites?: { apiKey?: string };
 };
 
@@ -103,6 +104,10 @@ function validateCreds(input: CredsBody): {
 			};
 		}
 		if (k) out.dedalus = { apiKey: k };
+	}
+	if (input.e2b) {
+		const k = (input.e2b.apiKey ?? "").trim();
+		if (k) out.e2b = { apiKey: k };
 	}
 	if (input.sprites) {
 		const k = (input.sprites.apiKey ?? "").trim();
