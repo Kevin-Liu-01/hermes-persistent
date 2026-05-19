@@ -233,7 +233,7 @@ function commandFor(
 					`export PATH=${p.HOME}/.local/bin:$PATH`,
 					`python3 -m venv ${p.HERMES_HOME}/venv`,
 					`${p.HERMES_HOME}/venv/bin/python -m pip install --upgrade pip`,
-					`${p.HERMES_HOME}/venv/bin/pip install 'hermes-agent[web,mcp] @ git+https://github.com/NousResearch/hermes-agent.git@main'`,
+					`${p.HERMES_HOME}/venv/bin/pip install 'hermes-agent[web,mcp] @ git+https://github.com/NousResearch/hermes-agent.git@main' aiohttp`,
 				].join(" && ");
 			}
 			return [
@@ -244,7 +244,7 @@ function commandFor(
 				`${sudo}apt-get update -qq >/dev/null && ${sudo}apt-get install -y -qq python3-venv python3-pip >/dev/null`,
 				`rm -rf ${p.HERMES_HOME}/venv && python3 -m venv ${p.HERMES_HOME}/venv`,
 				`${p.HERMES_HOME}/venv/bin/python -m pip install --upgrade pip`,
-				`${p.HERMES_HOME}/venv/bin/pip install 'hermes-agent[web,mcp] @ git+https://github.com/NousResearch/hermes-agent.git@main'`,
+				`${p.HERMES_HOME}/venv/bin/pip install 'hermes-agent[web,mcp] @ git+https://github.com/NousResearch/hermes-agent.git@main' aiohttp`,
 			].join(" && ");
 		case "install-node":
 			if (isE2B) {
@@ -339,7 +339,7 @@ function configureHermes(
 		`hermes config set model.api_key ${upstreamApiKey}`,
 		`hermes config set model.default ${model}`,
 		`hermes config set first_run_complete true`,
-		`cat > ${p.HERMES_HOME}/.env <<EOF\nAPI_SERVER_ENABLED=true\nAPI_SERVER_KEY=${gatewayKey}\nAPI_SERVER_HOST=0.0.0.0\nAPI_SERVER_PORT=${HERMES_PORT}\nEOF`,
+		`cat > ${p.HERMES_HOME}/.env <<EOF\nAPI_SERVER_ENABLED=true\nAPI_SERVER_KEY=${gatewayKey}\nAPI_SERVER_HOST=0.0.0.0\nAPI_SERVER_PORT=${HERMES_PORT}\nGATEWAY_ALLOW_ALL_USERS=true\nEOF`,
 	].join(" && ");
 }
 
