@@ -82,7 +82,7 @@ const STATE_TONE: Record<string, "ok" | "warn" | "info" | "muted"> = {
 const PROVIDER_MARK: Record<ProviderKind, "dedalus" | null> = {
 	dedalus: "dedalus",
 	e2b: null,
-	fly: null,
+	sprites: null,
 };
 
 const AGENT_MARK: Record<AgentKind, "nous" | "openclaw" | "anthropic" | "openai"> = {

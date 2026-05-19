@@ -87,12 +87,12 @@ const PROVIDERS_DESC: Record<
 		ready: true,
 		keyHint: "dsk-live-...",
 	},
-	fly: {
-		name: "Fly Machines",
+	sprites: {
+		name: "Sprites",
 		tagline:
-			"Fly.io persistent microVMs with volumes. Alternative host for durable Hermes or OpenClaw machines.",
+			"Persistent Linux sandboxes by Fly.io. Auto-sleep, instant wake, checkpoints, public URLs. The simplest place to run an agent.",
 		ready: true,
-		keyHint: "fly_pat_... or FlyV1 ...",
+		keyHint: "sprites-token",
 	},
 	e2b: {
 		name: "E2B Sandbox",
@@ -390,8 +390,7 @@ function StepShell({
 
 type CredsState = {
 	dedalus: string;
-	fly: string;
-	flyOrg: string;
+	sprites: string;
 	e2b: string;
 	cursor: string;
 	anthropic: string;
@@ -410,7 +409,7 @@ function CredentialsStep({
 	onSave: (
 		creds: {
 			dedalus?: { apiKey: string };
-			fly?: { apiKey: string; orgSlug?: string };
+			sprites?: { apiKey: string };
 			e2b?: { apiKey: string };
 		},
 		cursorApiKey: string | undefined,
@@ -419,8 +418,7 @@ function CredentialsStep({
 }) {
 	const [state, setState] = useState<CredsState>({
 		dedalus: "",
-		fly: "",
-		flyOrg: "",
+		sprites: "",
 		e2b: "",
 		cursor: "",
 		anthropic: "",
@@ -428,13 +426,13 @@ function CredentialsStep({
 	});
 
 	const dedalusOnFile = config.providers.dedalus.configured;
-	const flyOnFile = config.providers.fly.configured;
+	const spritesOnFile = config.providers.sprites.configured;
 	const e2bOnFile = config.providers.e2b.configured;
 	const cursorOnFile = config.hasCursorKey;
 	const anthropicOnFile = config.aiProviders.anthropic.configured;
 	const openaiOnFile = config.aiProviders.openai.configured;
 	const anyConfigured =
-		dedalusOnFile || flyOnFile || e2bOnFile || hasOwnerDedalusKey ||
+		dedalusOnFile || spritesOnFile || e2bOnFile || hasOwnerDedalusKey ||
 		anthropicOnFile || openaiOnFile;
 
 	function buildPatch() {
@@ -442,11 +440,8 @@ function CredentialsStep({
 		if (state.dedalus.trim()) {
 			creds.dedalus = { apiKey: state.dedalus.trim() };
 		}
-		if (state.fly.trim()) {
-			creds.fly = {
-				apiKey: state.fly.trim(),
-				orgSlug: state.flyOrg.trim() || undefined,
-			};
+		if (state.sprites.trim()) {
+			creds.sprites = { apiKey: state.sprites.trim() };
 		}
 		if (state.e2b.trim()) {
 			creds.e2b = { apiKey: state.e2b.trim() };
@@ -492,19 +487,13 @@ function CredentialsStep({
 					}
 				/>
 				<KeyField
-					label="Fly.io token"
-					placeholder="fly_pat_... or FlyV1 ..."
-					value={state.fly}
-					onChange={(v) => setState((s) => ({ ...s, fly: v }))}
+					label="Sprites token"
+					placeholder="kevin-liu-553/..."
+					value={state.sprites}
+					onChange={(v) => setState((s) => ({ ...s, sprites: v }))}
 					hint={
-						flyOnFile ? "On file. Leave blank to keep." : "Optional. For Fly Machines provider."
+						spritesOnFile ? "On file. Leave blank to keep." : "Get one at sprites.dev/account."
 					}
-					secondary={{
-						label: "Fly org slug (optional)",
-						placeholder: "personal",
-						value: state.flyOrg,
-						onChange: (v) => setState((s) => ({ ...s, flyOrg: v })),
-					}}
 				/>
 			</div>
 
@@ -700,7 +689,7 @@ function ProviderStep({
 	return (
 		<StepShell
 			title="Pick the provider"
-			description="Where the agent's microVM lives. All providers accept credentials and provision through the same multi-tenant shape. Dedalus is the default with full sleep/wake and persistent disk. E2B Sandbox offers pause/resume with snapshots. Fly Machines offers persistent VMs with volumes."
+			description="Where the agent's microVM lives. All providers accept credentials and provision through the same multi-tenant shape. Dedalus is the default with full sleep/wake and persistent disk. E2B Sandbox offers pause/resume with snapshots. Sprites offers persistent sandboxes with auto-sleep and instant wake."
 		>
 			<div className="grid gap-4 md:grid-cols-3">
 				{PROVIDER_KINDS.map((kind) => {

@@ -39,8 +39,7 @@ export function SettingsPanel({ initialConfig }: Props) {
 	const [config, setConfig] = useState(initialConfig);
 	const [dedalusKey, setDedalusKey] = useState("");
 	const [dedalusBaseUrl, setDedalusBaseUrl] = useState("");
-	const [flyKey, setFlyKey] = useState("");
-	const [flyOrgSlug, setFlyOrgSlug] = useState("");
+	const [spritesKey, setSpritesKey] = useState("");
 	const [e2bKey, setE2bKey] = useState("");
 	const [cursorApiKey, setCursorApiKey] = useState("");
 	const [anthropicKey, setAnthropicKey] = useState("");
@@ -77,11 +76,8 @@ export function SettingsPanel({ initialConfig }: Props) {
 					baseUrl: dedalusBaseUrl.trim() || undefined,
 				};
 			}
-		if (flyKey.trim() || flyOrgSlug.trim()) {
-			providers.fly = {
-				apiKey: flyKey.trim(),
-				orgSlug: flyOrgSlug.trim() || undefined,
-			};
+		if (spritesKey.trim()) {
+			providers.sprites = { apiKey: spritesKey.trim() };
 		}
 		if (e2bKey.trim()) {
 			providers.e2b = { apiKey: e2bKey.trim() };
@@ -231,11 +227,10 @@ export function SettingsPanel({ initialConfig }: Props) {
 					]}
 				/>
 				<ProviderBox
-					title="Fly Machines"
-					configured={config.providers.fly.configured}
+					title="Sprites"
+					configured={config.providers.sprites.configured}
 					fields={[
-						["API token", flyKey, setFlyKey, "FlyV1 ..."],
-						["Org slug", flyOrgSlug, setFlyOrgSlug, "personal"],
+						["Token", spritesKey, setSpritesKey, "kevin-liu-553/..."],
 					]}
 				/>
 			</div>

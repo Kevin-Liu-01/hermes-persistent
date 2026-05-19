@@ -1,7 +1,7 @@
 /**
  * Provider abstraction for the multi-tenant rig.
  *
- * Each provider (Dedalus, E2B, Fly) implements a thin
+ * Each provider (Dedalus, E2B, Sprites) implements a thin
  * `MachineProvider` contract. Routes call `getProvider(kind, creds)` to
  * get an instance bound to the user's credentials, then drive it with
  * `provision`, `wake`, `sleep`, `destroy`, `state`, and `exec`.
@@ -17,7 +17,7 @@ import type {
 } from "@/lib/user-config/schema";
 
 /**
- * Normalized state across providers. Maps Dedalus phases, Fly states,
+ * Normalized state across providers. Maps Dedalus phases, Sprites states,
  * and Sandbox states into one enum the UI can render uniformly.
  */
 export type MachineState =

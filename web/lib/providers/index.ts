@@ -14,7 +14,7 @@ import type {
 
 import { DedalusProvider } from "./dedalus";
 import { E2BProvider } from "./e2b";
-import { FlyProvider } from "./fly";
+import { SpritesProvider } from "./sprites";
 import { MachineProviderError, type MachineProvider } from "./types";
 
 export function getProvider(
@@ -44,16 +44,16 @@ export function getProvider(
 			}
 			return new E2BProvider(creds);
 		}
-		case "fly": {
-			const creds = credentials.fly;
+		case "sprites": {
+			const creds = credentials.sprites;
 			if (!creds?.apiKey) {
 				throw new MachineProviderError(
-					"fly",
+					"sprites",
 					"missing_credentials",
-					"No Fly.io API token on file. Add one via /dashboard/setup step 1.",
+					"No Sprites token on file. Add one via /dashboard/setup or get one at sprites.dev/account.",
 				);
 			}
-			return new FlyProvider(creds);
+			return new SpritesProvider(creds);
 		}
 		default: {
 			const exhaustive: never = kind;

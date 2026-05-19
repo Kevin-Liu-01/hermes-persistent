@@ -89,16 +89,13 @@ const PROVIDERS_META: Record<
 		keyPlaceholder: "dsk-live-...",
 		keyHint: "Get one at dedaluslabs.ai/dashboard/api-keys",
 	},
-	fly: {
-		name: "Fly Machines",
+	sprites: {
+		name: "Sprites",
 		tagline:
-			"Fly.io persistent VMs with volumes. Alternative host for durable Hermes or OpenClaw machines.",
-		keyLabel: "Fly.io token",
-		keyPlaceholder: "fly_pat_... or FlyV1 ...",
-		keyHint: "Create a token at fly.io/dashboard/-/tokens",
-		secondaryFields: [
-			{ label: "Org slug (optional)", placeholder: "personal", field: "orgSlug" },
-		],
+			"Persistent Linux sandboxes by Fly.io. Auto-sleep, instant wake, checkpoints, public URLs. The simplest place to run an agent.",
+		keyLabel: "Sprites token",
+		keyPlaceholder: "kevin-liu-553/...",
+		keyHint: "Get one at sprites.dev/account",
 	},
 	e2b: {
 		name: "E2B Sandbox",
@@ -1000,8 +997,8 @@ function ProviderPickStep({
 				</h1>
 				<p className="mt-1 max-w-[60ch] text-[13px] text-[var(--ret-text-dim)]">
 					The infrastructure provider hosting your agent&rsquo;s VM.
-					Dedalus is the default and fully wired. E2B Sandbox and Fly
-					Machines are available as alternative hosts.
+				Dedalus is the default and fully wired. E2B Sandbox and
+				Sprites are available as alternative hosts.
 				</p>
 			</div>
 			<div className="grid gap-3 md:grid-cols-3">

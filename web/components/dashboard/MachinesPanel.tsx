@@ -76,7 +76,7 @@ const PROVIDER_LOGO: Record<ProviderKind, "dedalus" | "nous" | "cursor" | null> 
 	{
 		dedalus: "dedalus",
 		e2b: null,
-		fly: null,
+		sprites: null,
 	};
 
 export function MachinesPanel() {

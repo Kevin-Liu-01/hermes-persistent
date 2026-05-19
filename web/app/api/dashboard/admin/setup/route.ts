@@ -65,7 +65,7 @@ function asSpec(value: unknown): MachineSpec | null {
 
 type CredsBody = {
 	dedalus?: { apiKey?: string };
-	fly?: { apiKey?: string; orgSlug?: string };
+	sprites?: { apiKey?: string };
 };
 
 type AiKeysBody = {
@@ -104,10 +104,9 @@ function validateCreds(input: CredsBody): {
 		}
 		if (k) out.dedalus = { apiKey: k };
 	}
-	if (input.fly) {
-		const k = (input.fly.apiKey ?? "").trim();
-		const org = (input.fly.orgSlug ?? "").trim() || undefined;
-		if (k) out.fly = { apiKey: k, orgSlug: org };
+	if (input.sprites) {
+		const k = (input.sprites.apiKey ?? "").trim();
+		if (k) out.sprites = { apiKey: k };
 	}
 	return { ok: true, value: out };
 }

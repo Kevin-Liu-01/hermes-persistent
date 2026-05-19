@@ -60,7 +60,7 @@ import {
 const KNOWN_AGENTS: ReadonlySet<AgentKind> = new Set(["hermes", "openclaw"]);
 const KNOWN_PROVIDERS: ReadonlySet<ProviderKind> = new Set([
 	"dedalus",
-	"fly",
+	"sprites",
 	"e2b",
 ]);
 const KNOWN_GATEWAYS: ReadonlySet<GatewayKind> = new Set([
@@ -313,11 +313,8 @@ function buildConfig(publicMeta: RawPublic, privateMeta: RawPrivate): UserConfig
 			baseUrl: privateProviders.dedalus.baseUrl,
 		};
 	}
-	if (privateProviders.fly?.apiKey) {
-		providers.fly = {
-			apiKey: privateProviders.fly.apiKey,
-			orgSlug: privateProviders.fly.orgSlug,
-		};
+	if (privateProviders.sprites?.apiKey) {
+		providers.sprites = { apiKey: privateProviders.sprites.apiKey };
 	}
 	if (privateProviders.e2b?.apiKey) {
 		providers.e2b = { apiKey: privateProviders.e2b.apiKey };
@@ -976,7 +973,7 @@ export async function setUserConfigById(
 /**
  * Resolve the env-shape needed to talk to a specific machine's
  * Dedalus host. Only Dedalus machines have a Dedalus API call surface;
- * E2B + Fly use their own SDKs so this throws if you call
+ * E2B + Sprites use their own SDKs so this throws if you call
  * it on a non-Dedalus machine. The caller picks the right API per kind.
  */
 export async function getDedalusEnvForMachine(machine: MachineRef): Promise<{

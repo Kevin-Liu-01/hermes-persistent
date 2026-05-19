@@ -427,9 +427,9 @@ async function exposeGateway(
 		return url ? (url.endsWith("/v1") ? url : `${url}/v1`) : null;
 	}
 
-	if (provider.kind === "fly") {
-		const flyProvider = provider as import("@/lib/providers/fly").FlyProvider;
-		const url = await flyProvider.getPublicUrl(machine.id, port);
+	if (provider.kind === "sprites") {
+		const spritesProvider = provider as import("@/lib/providers/sprites").SpritesProvider;
+		const url = await spritesProvider.getPublicUrl(machine.id, port);
 		return url ? (url.endsWith("/v1") ? url : `${url}/v1`) : null;
 	}
 
