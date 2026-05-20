@@ -33,7 +33,10 @@ type BootstrapPaths = {
 };
 
 function pathsFor(providerKind: ProviderKind): BootstrapPaths {
-	const HOME = providerKind === "e2b" ? "/home/user" : "/home/machine";
+	const HOME =
+		providerKind === "e2b" ? "/home/user" :
+		providerKind === "sprites" ? "/home/sprite" :
+		"/home/machine";
 	return {
 		HOME,
 		AGENT_HOME: `${HOME}/.agent`,
@@ -195,11 +198,14 @@ function commandFor(
 
 	const providerKind = machine.providerKind;
 	const isE2B = providerKind === "e2b";
-	const sudo = isE2B ? "sudo " : "";
+	const isSprites = providerKind === "sprites";
+	const isSandbox = isE2B || isSprites;
+	// E2B and Sprites run as non-root users with sudo available
+	const sudo = isSandbox ? "sudo " : "";
 
 	switch (phase) {
 		case "system-deps":
-			if (isE2B) {
+			if (isSandbox) {
 				return [
 					"set -e",
 					`mkdir -p ${p.APP_HOME}/chats ${p.APP_HOME}/artifacts ${p.HERMES_HOME}/logs ${p.OPENCLAW_HOME}/logs ${p.MACHINE_HOME}/logs/services`,
@@ -226,7 +232,7 @@ function commandFor(
 				: null;
 		case "install-hermes":
 			if (agent !== "hermes") return null;
-			if (isE2B) {
+			if (isSandbox) {
 				return [
 					"set -e",
 					`export HOME=${p.HOME}`,
@@ -247,7 +253,7 @@ function commandFor(
 				`${p.HERMES_HOME}/venv/bin/pip install 'hermes-agent[web,mcp] @ git+https://github.com/NousResearch/hermes-agent.git@main' aiohttp`,
 			].join(" && ");
 		case "install-node":
-			if (isE2B) {
+			if (isSandbox) {
 				return "set -e && node --version";
 			}
 			return [
@@ -274,14 +280,17 @@ function commandFor(
 			return cursorKey
 				? `mkdir -p ${p.APP_HOME}/cursor && printf %s ${cursorKey} > ${p.APP_HOME}/cursor/.configured`
 				: `mkdir -p ${p.APP_HOME}/cursor && touch ${p.APP_HOME}/cursor/.disabled`;
-		case "configure-hermes":
+		case "configure-hermes": {
+			// Sprites proxies the sprite URL to port 8080; E2B uses per-port URLs
+			const gwPort = isSprites ? 8080 : HERMES_PORT;
 			if (agent === "openclaw") {
 				return configureOpenClaw(model, gatewayKey, upstreamApiKey, upstreamBaseUrl, p);
 			}
 			if (agent === "claude-code" || agent === "codex") {
 				return configureCliAgent(agent, upstreamApiKey, p);
 			}
-			return configureHermes(model, gatewayKey, upstreamApiKey, upstreamBaseUrl, p);
+			return configureHermes(model, gatewayKey, upstreamApiKey, upstreamBaseUrl, p, gwPort);
+		}
 		case "register-cursor-mcp":
 			return `mkdir -p ${p.HERMES_HOME} && touch ${p.HERMES_HOME}/mcp-registered`;
 		case "seed-cron-jobs":
@@ -289,14 +298,14 @@ function commandFor(
 		case "start-gateway":
 			if (agent === "openclaw") return startOpenClaw(p);
 			if (agent === "claude-code" || agent === "codex") return null;
-			return startHermes(p, isE2B);
+			return startHermes(p, isSandbox);
 		case "install-closed-loop-tools":
-			return installClosedLoopTools(p, isE2B);
+			return installClosedLoopTools(p, isSandbox);
 	}
 }
 
-function installClosedLoopTools(p: BootstrapPaths, isE2B = false): string {
-	const sudo = isE2B ? "sudo " : "";
+function installClosedLoopTools(p: BootstrapPaths, isSandbox = false): string {
+	const sudo = isSandbox ? "sudo " : "";
 	return [
 		"set -e",
 		`mkdir -p ${p.NPM_PREFIX} ${p.NPM_CACHE} ${p.PLAYWRIGHT_BROWSERS} ${p.AGENT_BROWSER_HOME} ${p.AGENT_HOME}/docs ${p.MACHINE_HOME}/logs/services`,
@@ -307,7 +316,7 @@ function installClosedLoopTools(p: BootstrapPaths, isE2B = false): string {
 		`export AGENT_BROWSER_DATA_DIR=${p.AGENT_BROWSER_HOME}`,
 		`export PATH=${p.NPM_PREFIX}/bin:${p.HOME}/.local/bin:$PATH`,
 		`${sudo}npm install -g --no-audit --no-fund --loglevel=error agent-browser playwright @playwright/mcp`,
-		...(isE2B
+		...(isSandbox
 			? [`${sudo}npx playwright install --with-deps chromium`]
 			: [
 					'for i in $(seq 1 30); do fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1 || break; echo "waiting for dpkg lock ($i/30)..."; sleep 2; done',
@@ -330,6 +339,7 @@ function configureHermes(
 	upstreamApiKey: string,
 	upstreamBaseUrl: string,
 	p: BootstrapPaths,
+	port = HERMES_PORT,
 ): string {
 	return [
 		"set -e",
@@ -339,7 +349,7 @@ function configureHermes(
 		`hermes config set model.api_key ${upstreamApiKey}`,
 		`hermes config set model.default ${model}`,
 		`hermes config set first_run_complete true`,
-		`cat > ${p.HERMES_HOME}/.env <<EOF\nAPI_SERVER_ENABLED=true\nAPI_SERVER_KEY=${gatewayKey}\nAPI_SERVER_HOST=0.0.0.0\nAPI_SERVER_PORT=${HERMES_PORT}\nGATEWAY_ALLOW_ALL_USERS=true\nEOF`,
+		`cat > ${p.HERMES_HOME}/.env <<EOF\nAPI_SERVER_ENABLED=true\nAPI_SERVER_KEY=${gatewayKey}\nAPI_SERVER_HOST=0.0.0.0\nAPI_SERVER_PORT=${port}\nGATEWAY_ALLOW_ALL_USERS=true\nEOF`,
 	].join(" && ");
 }
 
@@ -413,11 +423,11 @@ function machineSettingsJson(machine: MachineRef, config: UserConfig): string {
 	return JSON.stringify(settings, null, 2);
 }
 
-function startHermes(p: BootstrapPaths, isE2B = false): string {
-	if (isE2B) {
-		// E2B: commands.run waits for ALL child processes including
-		// backgrounded ones. Use `cmd </dev/null >/dev/null 2>&1 & disown`
-		// to fully detach the gateway from the shell session.
+function startHermes(p: BootstrapPaths, isSandbox = false): string {
+	if (isSandbox) {
+		// E2B/Sprites: commands.run waits for ALL child processes.
+		// Use `& disown` to fully detach the gateway from the shell session.
+		// The port comes from $API_SERVER_PORT in the .env we wrote earlier.
 		return [
 			"set -e",
 			hermesEnv(p),
@@ -427,8 +437,8 @@ function startHermes(p: BootstrapPaths, isE2B = false): string {
 			`mkdir -p ${p.MACHINE_HOME}/logs/services`,
 			`hermes gateway >> ${p.HERMES_HOME}/logs/gateway.log 2>&1 </dev/null & disown`,
 			"sleep 15",
-			`ss -tlnp 2>/dev/null | grep ':${HERMES_PORT}' || (tail -20 ${p.HERMES_HOME}/logs/gateway.log && exit 1)`,
-			`echo gateway:${HERMES_PORT}`,
+			`ss -tlnp 2>/dev/null | grep \":$API_SERVER_PORT\" || (tail -20 ${p.HERMES_HOME}/logs/gateway.log && exit 1)`,
+			`echo gateway:$API_SERVER_PORT`,
 		].join(" && ");
 	}
 	const script = [
