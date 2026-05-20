@@ -199,6 +199,17 @@ export class E2BProvider implements MachineProvider {
 				exitCode: result.exitCode,
 			};
 		} catch (err) {
+			// E2B SDK throws CommandExitError on non-zero exit codes.
+			// Return the result so the bootstrap runner can inspect
+			// exitCode/stderr instead of getting a generic error.
+			if (err && typeof err === "object" && "exitCode" in err) {
+				const cmdErr = err as { exitCode: number; stdout?: string; stderr?: string };
+				return {
+					stdout: cmdErr.stdout ?? "",
+					stderr: cmdErr.stderr ?? "",
+					exitCode: cmdErr.exitCode,
+				};
+			}
 			throw new MachineProviderError(
 				"e2b",
 				classifyError(err),

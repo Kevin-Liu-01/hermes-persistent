@@ -49,6 +49,11 @@ export function useMachineControl(): ControlState & {
 
 	const fetchSummary = useCallback(async (): Promise<MachineSummary | null> => {
 		const response = await fetch("/api/dashboard/machine", { cache: "no-store" });
+		if (response.status === 404) {
+			stoppedRef.current = true;
+			setState((prev) => ({ ...prev, error: "not_provisioned", machine: null, pending: null }));
+			return null;
+		}
 		if (!response.ok) return null;
 		return (await response.json()) as MachineSummary;
 	}, []);

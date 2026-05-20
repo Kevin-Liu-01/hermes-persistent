@@ -111,24 +111,33 @@ export function FleetMetrics() {
 	const [stamp, setStamp] = useState<number | null>(null);
 	const lastPhaseByIdRef = useRef<Map<string, string>>(new Map());
 	const latencyRef = useRef<LatencySample[]>([]);
+	const gatewayDeadRef = useRef(false);
+	const logsDeadRef = useRef(false);
 
 	const tick = useCallback(async (): Promise<void> => {
 		try {
-			const [machinesRes, gatewayRes, logsRes] = await Promise.all([
-				fetch("/api/dashboard/machines", { cache: "no-store" })
-					.then((r) => (r.ok ? (r.json() as Promise<Payload>) : null))
-					.catch(() => null),
-				fetch("/api/dashboard/gateway", { cache: "no-store" })
-					.then((r) => (r.ok ? (r.json() as Promise<GatewaySummary>) : null))
-					.catch(() => null),
-				fetch("/api/dashboard/logs?n=500", { cache: "no-store" })
-					.then((r) =>
-						r.ok
-							? (r.json() as Promise<LiveDataEnvelope<LogsPayload>>)
-							: null,
-					)
-					.catch(() => null),
+			const [machinesRaw, gatewayRaw, logsRaw] = await Promise.all([
+				fetch("/api/dashboard/machines", { cache: "no-store" }).catch(() => null),
+				gatewayDeadRef.current
+					? Promise.resolve(null)
+					: fetch("/api/dashboard/gateway", { cache: "no-store" }).catch(() => null),
+				logsDeadRef.current
+					? Promise.resolve(null)
+					: fetch("/api/dashboard/logs?n=500", { cache: "no-store" }).catch(() => null),
 			]);
+
+			if (gatewayRaw?.status === 404) gatewayDeadRef.current = true;
+			if (logsRaw?.status === 404) logsDeadRef.current = true;
+
+			const machinesRes = machinesRaw?.ok
+				? ((await machinesRaw.json()) as Payload)
+				: null;
+			const gatewayRes = gatewayRaw?.ok
+				? ((await gatewayRaw.json()) as GatewaySummary)
+				: null;
+			const logsRes = logsRaw?.ok
+				? ((await logsRaw.json()) as LiveDataEnvelope<LogsPayload>)
+				: null;
 
 			if (machinesRes) {
 				const live = machinesRes.machines.filter((m) => !m.archived);

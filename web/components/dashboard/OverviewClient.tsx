@@ -49,16 +49,21 @@ export function OverviewClient({ counts, agentKind, model }: Props) {
 
 	useEffect(() => {
 		let stopped = false;
+		let interval: number;
 		async function tick() {
-			const g = await fetch("/api/dashboard/gateway", { cache: "no-store" })
-				.then((r) => (r.ok ? (r.json() as Promise<GatewaySummary>) : null))
-				.catch(() => null);
+			const res = await fetch("/api/dashboard/gateway", { cache: "no-store" }).catch(() => null);
 			if (stopped) return;
+			if (res?.status === 404) {
+				window.clearInterval(interval);
+				stopped = true;
+				return;
+			}
+			const g = res?.ok ? ((await res.json()) as GatewaySummary) : null;
 			setGateway(g);
 			setStamp(Date.now());
 		}
 		tick();
-		const interval = window.setInterval(() => {
+		interval = window.setInterval(() => {
 			if (document.visibilityState === "visible") tick();
 		}, GATEWAY_POLL_MS);
 		return () => {

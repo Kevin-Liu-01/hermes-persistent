@@ -93,24 +93,28 @@ export function MetricsChartPanel({ pollMs = POLL_MS }: Props) {
 
 	useEffect(() => {
 		let stopped = false;
+		let interval: number;
 
 		async function tick(): Promise<void> {
 			try {
-				const [gw, logsRes] = await Promise.all([
-					fetch("/api/dashboard/gateway", { cache: "no-store" })
-						.then((r) =>
-							r.ok ? (r.json() as Promise<GatewaySummary>) : null,
-						)
-						.catch(() => null),
-					fetch("/api/dashboard/logs?n=200", { cache: "no-store" })
-						.then((r) =>
-							r.ok
-								? (r.json() as Promise<LiveDataEnvelope<LogsPayload>>)
-								: null,
-						)
-						.catch(() => null),
+				const [gwRes, logsRawRes] = await Promise.all([
+					fetch("/api/dashboard/gateway", { cache: "no-store" }).catch(() => null),
+					fetch("/api/dashboard/logs?n=200", { cache: "no-store" }).catch(() => null),
 				]);
 				if (stopped) return;
+
+				if (gwRes?.status === 404 || logsRawRes?.status === 404) {
+					window.clearInterval(interval);
+					stopped = true;
+					return;
+				}
+
+				const gw = gwRes?.ok
+					? ((await gwRes.json()) as GatewaySummary)
+					: null;
+				const logsRes = logsRawRes?.ok
+					? ((await logsRawRes.json()) as LiveDataEnvelope<LogsPayload>)
+					: null;
 
 				setGateway(gw);
 				setLogs(logsRes?.ok ? logsRes.data : null);
@@ -130,7 +134,7 @@ export function MetricsChartPanel({ pollMs = POLL_MS }: Props) {
 		}
 
 		void tick();
-		const interval = window.setInterval(() => {
+		interval = window.setInterval(() => {
 			if (document.visibilityState === "visible") void tick();
 		}, pollMs);
 		return () => {

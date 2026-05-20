@@ -87,30 +87,42 @@ export function ObservabilityPanel({
 
 	useEffect(() => {
 		let stopped = false;
+		let interval: number;
 
 		async function tick() {
 			try {
-				const [gw, logs, cursor, sessions] = await Promise.all([
-					fetch("/api/dashboard/gateway", { cache: "no-store" })
-						.then((r) => (r.ok ? (r.json() as Promise<GatewaySummary>) : null))
-						.catch(() => null),
-					fetch("/api/dashboard/logs?n=40", { cache: "no-store" })
-						.then((r) =>
-							r.ok ? (r.json() as Promise<LiveDataEnvelope<LogsPayload>>) : null,
-						)
-						.catch(() => null),
-					fetch("/api/dashboard/cursor", { cache: "no-store" })
-						.then((r) =>
-							r.ok ? (r.json() as Promise<LiveDataEnvelope<CursorRunsPayload>>) : null,
-						)
-						.catch(() => null),
-					fetch("/api/dashboard/sessions", { cache: "no-store" })
-						.then((r) =>
-							r.ok ? (r.json() as Promise<LiveDataEnvelope<SessionsPayload>>) : null,
-						)
-						.catch(() => null),
+				const [gwRes, logsRes, cursorRes, sessionsRes] = await Promise.all([
+					fetch("/api/dashboard/gateway", { cache: "no-store" }).catch(() => null),
+					fetch("/api/dashboard/logs?n=40", { cache: "no-store" }).catch(() => null),
+					fetch("/api/dashboard/cursor", { cache: "no-store" }).catch(() => null),
+					fetch("/api/dashboard/sessions", { cache: "no-store" }).catch(() => null),
 				]);
 				if (stopped) return;
+
+				if (
+					gwRes?.status === 404 ||
+					logsRes?.status === 404 ||
+					cursorRes?.status === 404 ||
+					sessionsRes?.status === 404
+				) {
+					window.clearInterval(interval);
+					stopped = true;
+					setState((prev) => ({ ...prev, error: "not_provisioned" }));
+					return;
+				}
+
+				const gw = gwRes?.ok
+					? ((await gwRes.json()) as GatewaySummary)
+					: null;
+				const logs = logsRes?.ok
+					? ((await logsRes.json()) as LiveDataEnvelope<LogsPayload>)
+					: null;
+				const cursor = cursorRes?.ok
+					? ((await cursorRes.json()) as LiveDataEnvelope<CursorRunsPayload>)
+					: null;
+				const sessions = sessionsRes?.ok
+					? ((await sessionsRes.json()) as LiveDataEnvelope<SessionsPayload>)
+					: null;
 
 				const next: ObservabilityState = {
 					gateway: gw,
@@ -138,7 +150,7 @@ export function ObservabilityPanel({
 		}
 
 		void tick();
-		const interval = window.setInterval(() => {
+		interval = window.setInterval(() => {
 			if (document.visibilityState === "visible") void tick();
 		}, POLL_MS);
 		return () => {
