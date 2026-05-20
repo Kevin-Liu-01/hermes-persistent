@@ -415,16 +415,17 @@ function machineSettingsJson(machine: MachineRef, config: UserConfig): string {
 
 function startHermes(p: BootstrapPaths, isE2B = false): string {
 	if (isE2B) {
-		// E2B: simpler launch without setsid (may not be available).
-		// Background the gateway directly and check port binding.
+		// E2B: commands.run waits for ALL child processes including
+		// backgrounded ones. Use `cmd </dev/null >/dev/null 2>&1 & disown`
+		// to fully detach the gateway from the shell session.
 		return [
 			"set -e",
 			hermesEnv(p),
 			`source ${p.HERMES_HOME}/.env`,
-			`ps -eo pid,cmd 2>/dev/null | awk '/hermes gateway/ && !/awk/ {print $1}' | xargs -r kill 2>/dev/null || true`,
+			`ps -eo pid,cmd 2>/dev/null | awk '/hermes gateway/ && !/awk/ {print \\$1}' | xargs -r kill 2>/dev/null || true`,
 			"sleep 1",
 			`mkdir -p ${p.MACHINE_HOME}/logs/services`,
-			`nohup hermes gateway >> ${p.HERMES_HOME}/logs/gateway.log 2>&1 &`,
+			`hermes gateway >> ${p.HERMES_HOME}/logs/gateway.log 2>&1 </dev/null & disown`,
 			"sleep 15",
 			`ss -tlnp 2>/dev/null | grep ':${HERMES_PORT}' || (tail -20 ${p.HERMES_HOME}/logs/gateway.log && exit 1)`,
 			`echo gateway:${HERMES_PORT}`,
@@ -527,9 +528,9 @@ async function exposeGateway(
 	const port = machine.agentKind === "openclaw" ? OPENCLAW_PORT : HERMES_PORT;
 	const name = machine.agentKind === "openclaw" ? "openclaw" : "hermes";
 	if (provider.kind === "e2b") {
-		const e2bProvider = provider as import("@/lib/providers/e2b").E2BProvider;
-		const url = await e2bProvider.getPublicUrl(machine.id, port);
-		return url ? (url.endsWith("/v1") ? url : `${url}/v1`) : null;
+		// E2B public URL format is deterministic -- no SDK call needed
+		const url = `https://${port}-${machine.id}.e2b.app`;
+		return `${url}/v1`;
 	}
 
 	if (provider.kind === "sprites") {
